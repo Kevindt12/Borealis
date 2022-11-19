@@ -1,0 +1,96 @@
+﻿@using BlazorMonaco
+@using System.Reflection.Metadata
+
+
+
+
+
+<MonacoEditor @ref="@_editor" CssClass="pa-2 d-flex" Id="@Id.ToString()" ConstructionOptions="EditorConstructionOptions" OnKeyUp="OnKeyDownAsync" />
+
+
+
+@code {
+
+    private MonacoEditor _editor;
+
+    private Guid? _id;
+
+    [Parameter]
+    public Guid Id
+    {
+        set => _id = value;
+        get => _id ??= Guid.NewGuid();
+    }
+
+
+    /// <summary>
+    /// The code in the editor.
+    /// </summary>
+    [Parameter]
+    public string Value { get; set; } = string.Empty;
+
+
+    /// <summary>
+    /// Code in the editor changed.
+    /// </summary>
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    /// <summary>
+    /// The language the code editor should use.
+    /// </summary>
+    [Parameter]
+    public string Language { get; set; } = CodeEditorLanguages.Javascript;
+
+    /// <summary>
+    /// The height in pixels.
+    /// </summary>
+    [Parameter]
+    public int Height { get; set; } = 500;
+
+    /// <summary>
+    /// The width in pixels.
+    /// </summary>
+    [Parameter]
+    public int Width { get; set; } = 900;
+
+
+
+    /// <inheritdoc />
+    protected override async Task OnAfterRenderAsync(Boolean firstRender)
+    {
+        
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+
+    /// <summary>
+    /// Handles the binding with value from the monaco editor.
+    /// </summary>
+    protected virtual async Task OnKeyDownAsync()
+    {
+        Value = await _editor.GetValue();
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+
+    /// <summary>
+    /// The editor startup.
+    /// </summary>
+    private StandaloneEditorConstructionOptions EditorConstructionOptions(MonacoEditor editor)
+    {
+        return new StandaloneEditorConstructionOptions
+            {
+                Theme = "vs-dark",
+                AutomaticLayout = true,
+                Language = Language,
+                CodeLens = true,
+                Value = Value,
+                Dimension = new Dimension() { Height = Height, Width = Width },
+
+            };
+    }
+
+
+
+}

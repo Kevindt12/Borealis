@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+	  <TargetFramework>net7.0</TargetFramework>
+	  <Nullable>enable</Nullable>
+	  <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BlazorMonaco" Version="2.1.0" />
+    <PackageReference Include="MudBlazor" Version="6.0.18" />
+    <PackageReference Include="NLog" Version="5.0.5" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="5.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Extensions\" />
+    <Folder Include="Utilities\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Borealiis.Portal.Core\Borealis.Portal.Core.csproj" />
+    <ProjectReference Include="..\Borealis.Portal.Domain\Borealis.Portal.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Pages\EffectsPage.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Components\EffectParameterRow.razor" />
+    <_ContentIncludedByDefault Remove="Components\EffectParameterValueField.razor" />
+    <_ContentIncludedByDefault Remove="Components\IndexDeviceLedstripComponent.razor" />
+    <_ContentIncludedByDefault Remove="Pages\EffectsPage.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Components\EffectParameterRow.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Components\EffectParameterValueField.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Components\IndexDeviceLedstripComponent.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

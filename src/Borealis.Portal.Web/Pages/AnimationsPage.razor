@@ -1,0 +1,254 @@
+﻿@page "/Animations"
+
+@using Borealis.Domain.Effects
+@using Borealis.Domain.Animations
+
+@using Borealis.Portal.Domain.Animations
+@using Borealis.Portal.Domain.Effects
+@using Borealis.Portal.Web.Extensions
+@using Borealis.Portal.Web.Components
+
+
+@*
+
+    TODO: Make srue that for the parameters the field has a min size. Because not its all bundeld togather in the left top corner.
+
+*@
+
+
+@using Animation = Borealis.Domain.Animations.Animation
+
+@* ReSharper disable InconsistentNaming | This is because i want to threat them as fields. I know this is just a autistic thing.*@
+@inject ILogger<AnimationsPage> _logger
+@inject IAnimationManager _animationManager
+@inject IEffectManager _EffectManager
+@inject ISnackbar _snackbar
+@* ReSharper restore InconsistentNaming *@
+
+<PageTitle>Animation</PageTitle>
+
+
+<MudStack Class="py-4" AlignItems="AlignItems.Start" Justify="Justify.SpaceBetween" Row="true">
+    <MudButton Class="pa-2"
+               Size="Size.Small"
+               Color="Color.Primary"
+               Variant="Variant.Filled"
+               StartIcon="@Icons.Material.Filled.Add"
+               OnClick="OpenAddDialog">Add</MudButton>
+</MudStack>
+
+
+<MudTabs Class="pa-4 d-inline-flex"
+         Outlined="true"
+         Elevation="2"
+         Border="true"
+         Position="Position.Left">
+    @foreach (Animation animation in Animations)
+    {
+        <MudTabPanel Class="d-flex" Text="@animation.Name">
+            <MudPaper Elevation="2" Width="600" Height="700" Class="pa-2 d-flex d-block" MinHeight="700" MinWidth="1000">
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-1">
+                    @foreach (EffectParameter parameter in animation.Effect.EffectParameters)
+                    {
+                        <MudText Class="pa-2" Align="Align.Left" Typo="Typo.body1">@parameter.Identifier</MudText>
+                        <MudText Class="pa-2" Align="Align.Left" Typo="Typo.body1">@parameter.Description</MudText>
+                        <MudText Class="pa-2" Align="Align.Left" Typo="Typo.body1">@parameter.ParameterType</MudText>
+                        <EffectParameterValueField Class="pa-2" @bind-Value="@parameter.Value" Margin="Margin.Normal" Label="Value" Variant="Variant.Outlined" ParameterType="@parameter.ParameterType" />
+                    }
+                </MudStack>
+
+                <MudStack Class="pa-1 object-right-bottom" Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+
+                    <MudButton Class="pa-2"
+                           Size="Size.Small"
+                           Color="Color.Primary"
+                           Variant="Variant.Filled"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           OnClick="() => SaveAnimationAsync(animation)">Save</MudButton>
+
+                    <MudButton Class="pa-2"
+                           Size="Size.Small"
+                           Color="Color.Error"
+                           Variant="Variant.Filled"
+                           StartIcon="@Icons.Material.Filled.Delete"
+                           OnClick="() => DeleteAnimationAsync(animation)">Delete</MudButton>
+
+                </MudStack>
+            </MudPaper>
+        </MudTabPanel>
+    }
+</MudTabs>
+
+
+@* TODO: Add validation to animation page.*@
+
+
+@* ---------- Select Effect Dialog ----------- *@
+@if (true)
+{
+
+
+    <MudDialog @bind-IsVisible="_selectEffectDialogVisible" Options="GetDialogOptions()">
+        <TitleContent>
+            <MudText Typo="Typo.h5">
+                <MudIcon Icon="@Icons.Filled.Edit" Class="mr-3" /> Create Animation
+            </MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudTextField T="string" Class="pa-4" Variant="Variant.Outlined" Label="Animation Name" @bind-Value="@_newAnimationName" />
+            <MudSelect T="Effect" Class="pa-4" Label="Effect" Variant="Variant.Outlined" @bind-Value="@_newSelectedEffect">
+                @foreach (Effect effect in Effects)
+                {
+                    <MudSelectItem T="Effect" Value="@effect">@effect.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </DialogContent>
+        <DialogActions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="() => CreateAnimationAsync(_newAnimationName, _newSelectedEffect)" Class="px-10">Create</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CloseAddDialog" Class="px-10">Close</MudButton>
+        </DialogActions>
+    </MudDialog>
+
+}
+
+
+
+
+@code
+{
+
+    private bool _selectEffectDialogVisible;
+
+    private string _newAnimationName = default!;
+    private Effect _newSelectedEffect = default!;
+
+
+    /// <summary>
+    /// The <see cref="Animation"/> we have in the application.
+    /// </summary>
+    public List<Animation> Animations { get; set; } = new List<Animation>();
+
+    /// <summary>
+    /// The <see cref="Effect"/> we have in the application
+    /// </summary>
+    public IEnumerable<Effect> Effects { get; set; } = new List<Effect>();
+
+
+    /// <inheritdoc />
+    protected override async Task OnParametersSetAsync()
+    {
+        _logger.LogDebug("Loading parameters for animation page.");
+
+        // Loading all the parameters.
+        Animations = new List<Animation>(await _animationManager.GetAnimationsAsync());
+        Effects = new List<Effect>(await _EffectManager.GetEffectsAsync());
+
+        await base.OnParametersSetAsync();
+    }
+
+    /// ---------- Dialog ------------
+
+    /// <summary>
+    /// Opens the add new animation dialog.
+    /// </summary>
+    protected virtual void OpenAddDialog()
+    {
+        _selectEffectDialogVisible = true;
+    }
+
+
+    /// <summary>
+    /// Closes the add new animation dialog.
+    /// </summary>
+    protected virtual void CloseAddDialog()
+    {
+        _selectEffectDialogVisible = false;
+
+    }
+
+
+    /// <summary>
+    /// Clears and resets the fields in the Add new Animation Dialog.
+    /// </summary>
+    protected virtual void ClearDialog()
+    {
+        _newAnimationName = string.Empty;
+        _newSelectedEffect = new Effect();
+    }
+
+
+    private DialogOptions GetDialogOptions()
+    {
+        return new DialogOptions()
+            {
+                CloseOnEscapeKey = true,
+                Position = DialogPosition.Center,
+                FullWidth = true
+            };
+    }
+
+
+    /// ------- Functionality ----------
+
+
+    /// <summary>
+    /// Creates a new animation.
+    /// </summary>
+    /// <param name="name"> The name of the <see cref="Animation"/> we want to give.</param>
+    /// <param name="effect"> The <see cref="Effect"/> we want the <see cref="Animation"/> to be based on.</param>
+    protected virtual async Task CreateAnimationAsync(string name, Effect effect)
+    {
+        _logger.LogInformation($"Creating new animation with name {name}, and effect {effect.Name}.");
+
+        // Creating the animation.
+        Animation animation = new Animation(name, new AnimationEffect(effect));
+
+        // Adding the animation.
+        await _animationManager.SaveAnimationAsync(animation);
+        Animations.Add(animation);
+
+        // Clearing and closing the dialog.
+        ClearDialog();
+        CloseAddDialog();
+
+        // Informing the user and update UI.
+        _snackbar.AddSuccess($"Added {effect.Name} has been added!");
+        StateHasChanged();
+    }
+
+
+    /// <summary>
+    /// Saves the animation.
+    /// </summary>
+    /// <param name="animation">The animation we want to save.</param>
+    protected virtual async Task SaveAnimationAsync(Animation animation)
+    {
+        _logger.LogInformation($"Saving animation {animation.Name}.");
+
+        // Save the animation.
+        await _animationManager.SaveAnimationAsync(animation);
+
+        // Inform the user.
+        _snackbar.AddSuccess("Saved Animation!");
+    }
+
+    /// <summary>
+    /// Deletes a animation.
+    /// </summary>
+    /// <param name="animation">The <see cref="Animation"/> we want to delete.</param>
+    protected virtual async Task DeleteAnimationAsync(Animation animation)
+    {
+        _logger.LogInformation($"Deleting animation {animation.Name}.");
+
+        // TODO: Add message box question if we wnat ot delete.
+
+        // Delete the animation.
+        await _animationManager.DeleteAnimationAsync(animation);
+        Animations.Remove(animation);
+
+        // Inform the user and update the UI.
+        _snackbar.AddSuccess("Animation Deleted!");
+        StateHasChanged();
+    }
+}

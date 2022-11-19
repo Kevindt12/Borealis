@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Borealis.Portal.Data\Borealis.Portal.Data.csproj" />
+    <ProjectReference Include="..\Borealis.Portal.Domain\Borealis.Portal.Domain.csproj" />
+    <ProjectReference Include="..\Borealis.Portal.Infrastructure\Borealis.Portal.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Interaction\" />
+    <Folder Include="Effects\" />
+    <Folder Include="Exceptions\" />
+    <Folder Include="Extensions\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Jint" Version="2.11.58" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+  </ItemGroup>
+
+</Project>

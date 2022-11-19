@@ -1,0 +1,17 @@
+﻿{
+  "Ledstrips": [
+    {
+      "Name": "Test",
+      "Colors": 0,
+      "Protocol": 0,
+      "Length": 20,
+      "Connection": {
+        "Spi": {
+          "BusId": 0,
+          "ChipSelectLine": 0,
+          "DataFlow": 0
+        }
+      }
+    }
+  ]
+}

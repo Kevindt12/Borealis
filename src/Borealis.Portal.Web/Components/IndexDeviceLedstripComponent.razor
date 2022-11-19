@@ -1,0 +1,245 @@
+﻿@using Borealis.Domain.Devices
+@using Borealis.Domain.Effects
+@using Borealis.Portal.Core.Exceptions
+@using Borealis.Portal.Domain.Animations
+@using Borealis.Portal.Domain.Devices
+@using Borealis.Portal.Web.Extensions
+
+@using MudBlazor
+@using MudBlazor.Utilities
+
+@using Animation = Borealis.Domain.Animations.Animation
+
+
+
+@* ReSharper disable InconsistentNaming | This is because i want to threat them as fields. I know this is just a autistic thhing.*@
+@inject ILogger<IndexDeviceLedstripComponent> _logger
+@inject IAnimationManager _animationManager
+@inject ILedstripService _ledstripService
+@inject IDeviceManager _deviceManager
+@inject IDeviceService _deviceService
+@inject ISnackbar _snackbar
+@* ReSharper restore InconsistentNaming *@
+
+
+<MudDivider DividerType="DividerType.Inset" FlexItem="true" Absolute />
+@* Prevents Enumeration outside of scope. *@
+<MudText Class="py-1 px-3" Align="Align.Left" Typo="Typo.subtitle2">@Ledstrip.Name</MudText>
+
+<MudPaper Outlined="true" Class="pa-1">
+    <MudStack Row="true">
+
+        @* The animation selection. *@
+        <MudSelect Variant="Variant.Outlined" Dense="true" T="Animation" Class="pa-1" Disabled="@IsLedstripBusy()" @bind-Value="@_selectedAnimation">
+            @foreach (Animation animation in Animations)
+            {
+                <MudSelectItem T="Animation" Value="animation">@animation.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudDivider />
+
+        @* The action buttons. *@
+        <MudButtonGroup Class=" px-1 py-4" DisableElevation="true" Size="Size.Small" Variant="Variant.Filled">
+
+            <MudIconButton Icon="@(IsLedstripBusy() ? Icons.Material.Filled.Stop : Icons.Material.Filled.PlayArrow)"
+                           Variant="Variant.Outlined"
+                           Disabled="@(!IsDeviceConnected && _selectedAnimation != null)"
+                           Color="@(IsLedstripBusy() ? Color.Success : Color.Error)"
+                           OnClick="StartAnimationOnLedstripAsync" />
+
+            <MudIconButton Icon="@Icons.Material.Filled.Colorize"
+                           Variant="Variant.Outlined"
+                           Disabled="@(!IsDeviceConnected)"
+                           Color="Color.Primary"
+                           OnClick="OpenPickColorDialog" />
+        </MudButtonGroup>
+
+    </MudStack>
+</MudPaper>
+
+
+
+
+
+@* ---------- Select Effect Dialog ----------- *@
+@if (true)
+{
+
+
+    <MudDialog @bind-IsVisible="_showPickColorDialog" Options="GetDialogOptions()">
+        <TitleContent>
+            <MudText Typo="Typo.h5">
+                <MudIcon Icon="@Icons.Filled.Colorize" Class="mr-3" /> Pick Color
+            </MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudColorPicker PickerVariant="PickerVariant.Static" @bind-Value="@_selectedColor" Class="pa-4" DisableAlpha="true" DisableToolbar="true" />
+
+
+        </DialogContent>
+        <DialogActions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" Class="px-10" OnClick="OnSetSolidColorAsync">Set Color</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ClosePickColorDialog" Class="px-10">Close</MudButton>
+        </DialogActions>
+    </MudDialog>
+
+}
+
+@code {
+
+    private bool _showPickColorDialog;
+    private MudColor _selectedColor;
+
+    private Animation? _selectedAnimation;
+
+    /// <summary>
+    /// The device that the ledstrip is connected to.
+    /// </summary>
+    [Parameter]
+    public Device Device { get; set; } = default!;
+
+    /// <summary>
+    /// The ledstrip that we are possessing.
+    /// </summary>
+    [Parameter]
+    public Ledstrip Ledstrip { get; set; } = default!;
+
+
+    /// <summary>
+    /// Checks if the device is connected.
+    /// </summary>
+    protected bool IsDeviceConnected => _deviceService.IsDeviceConnected(Device);
+
+
+    /// <summary>
+    /// All the animations that we can play.
+    /// </summary>
+    protected List<Animation> Animations { get; set; } = new List<Animation>();
+
+
+
+    /// <inheritdoc />
+    protected override async Task OnParametersSetAsync()
+    {
+        // Gets the animation we can play.
+        Animations = new List<Animation>(await _animationManager.GetAnimationsAsync());
+
+        // The current playing animation.
+        _selectedAnimation = _ledstripService.GetAnimationPlayingOnLedstripOrDefault(Device, Ledstrip);
+
+        await base.OnParametersSetAsync();
+    }
+
+
+
+
+
+
+    /// ---------- Dialog ------------
+
+    /// <summary>
+    /// Opens the add new animation dialog.
+    /// </summary>
+    protected virtual void OpenPickColorDialog()
+    {
+        _showPickColorDialog = true;
+    }
+
+
+    /// <summary>
+    /// Closes the add new animation dialog.
+    /// </summary>
+    protected virtual void ClosePickColorDialog()
+    {
+        _showPickColorDialog = false;
+
+    }
+
+
+    /// <summary>
+    /// Clears and resets the fields in the Add new Animation Dialog.
+    /// </summary>
+    protected virtual void ClearDialog()
+    {
+    }
+
+
+    private DialogOptions GetDialogOptions()
+    {
+        return new DialogOptions()
+            {
+                CloseOnEscapeKey = true,
+                Position = DialogPosition.Center,
+                FullWidth = true
+            };
+    }// ------------- Functionality --------------------
+
+
+    /// <summary>
+    /// Checks if the ledstrip is busy.
+    /// </summary>
+    /// <returns></returns>
+    protected virtual bool IsLedstripBusy()
+    {
+        return _ledstripService.IsLedstripBusy(Device, Ledstrip);
+    }
+
+
+
+
+    protected virtual async Task StartAnimationOnLedstripAsync()
+    {
+        // Checking that we a animation selected.
+        if (_selectedAnimation == null)
+        {
+            _logger.LogError($"Trying to start animation on ledstrip {Ledstrip.Name} while no animation is selected.");
+            _snackbar.AddError("No animation selected!");
+            return;
+        }
+
+        throw new NotImplementedException();
+
+
+        _logger.LogInformation($"Start animation {_selectedAnimation.Name} on ledstrip {Ledstrip.Name}. ");
+
+        try
+        {
+
+            await _ledstripService.StartAnimationOnLedstripAsync(Device, Ledstrip, _selectedAnimation!);
+
+        }
+        catch (DeviceException e)
+        {
+            // Handle device not connected.
+        }
+
+    }
+
+
+
+
+    protected virtual async Task StopLedstripAsync()
+    {
+        await _ledstripService.StopLedstripAsync(Device, Ledstrip);
+
+    }
+
+
+    protected virtual async Task OnSetSolidColorAsync()
+    {
+        PixelColor color = ConvertToPixelColor(_selectedColor);
+
+        await _ledstripService.SetSolidColorAsync(Device, Ledstrip, color);
+
+        ClosePickColorDialog();
+    }
+
+
+    private PixelColor ConvertToPixelColor(MudColor color)
+    {
+
+        return new PixelColor(color.R, color.G, color.B);
+
+    }
+
+}

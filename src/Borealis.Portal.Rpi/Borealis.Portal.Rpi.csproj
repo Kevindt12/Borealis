@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Protos\portal.proto" GrpcServices="Server" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.49.0" />
+    <PackageReference Include="Iot.Device.Bindings" Version="2.2.0" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="5.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Ledstrips\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Borealis.Domain\Borealis.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

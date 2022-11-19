@@ -1,0 +1,51 @@
+﻿@page "/"
+@using Borealis.Domain.Devices
+@using Borealis.Portal.Domain.Animations
+@using Borealis.Portal.Domain.Devices
+@using MudBlazor
+
+@using Borealis.Portal.Web.Components
+
+@using Animation = Borealis.Domain.Animations.Animation
+
+@* ReSharper disable InconsistentNaming | This is because i want to threat them as fields. I know this is just a autistic thing.*@
+@inject IDeviceManager _DeviceManager
+@* ReSharper restore InconsistentNaming *@
+
+
+<PageTitle>Index</PageTitle>
+
+<MudGrid Class="pa-4">
+    @* The devices that we have. *@
+    @foreach (Device device in Devices)
+    {
+        @* Each Device *@
+        <MudItem lg="4" md="6" sm="12" xs="12">
+            <IndexDeviceComponent Device="@device"/>
+        </MudItem>
+    }
+</MudGrid>
+
+
+@code
+{
+
+    /// <summary>
+    /// The devices that we have in the application.
+    /// </summary>
+    protected IReadOnlyList<Device> Devices { get; set; } = new List<Device>();
+
+    
+
+    /// <inheritdoc />
+    protected override async Task OnParametersSetAsync()
+    {
+        Devices = new List<Device>(await _DeviceManager.GetDevicesAsync());
+
+        await base.OnParametersSetAsync();
+    }
+
+    
+
+
+}

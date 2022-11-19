@@ -1,0 +1,148 @@
+﻿@using MudBlazor
+@using Borealis.Domain.Effects
+@using Borealis.Portal.Web.Utilities
+
+
+
+
+
+<MudPaper Class="@_paperClass"
+          MaxHeight="50">
+
+
+    <MudStack Class="@_rowClass"
+              Justify="Justify.SpaceBetween"
+              AlignItems="AlignItems.Center"
+              Row="true">
+
+        @* Identifier *@
+        <MudTextField T="@string"
+                      Class="pa-1"
+                      Label="Identifier"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Value="@EffectParameter.Identifier"
+                      ValueChanged="OnIdentifierValueChangedAsync" />
+
+        @* Description *@
+        <MudTextField T="@string"
+                      Class="pa-1"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Label="Description"
+                      Value="@EffectParameter.Description"
+                      ValueChanged="OnDescriptionValueChangedAsync" />
+
+
+        @* Parameter Type *@
+        <MudSelect T="@EffectParameterType"
+                   Class="pa-1"
+                   Label="Type"
+                   Margin="Margin.Dense"
+                   Value="@EffectParameter.ParameterType"
+                   Variant="Variant.Outlined"
+                   ValueChanged="OnParameterTypeChangedAsync">
+            <MudSelectItem T="@EffectParameterType" Value="EffectParameterType.Text">Text</MudSelectItem>
+            <MudSelectItem T="@EffectParameterType" Value="EffectParameterType.Number">Number</MudSelectItem>
+            <MudSelectItem T="@EffectParameterType" Value="EffectParameterType.Boolean">Boolean</MudSelectItem>
+            <MudSelectItem T="@EffectParameterType" Value="EffectParameterType.Color">Color</MudSelectItem>
+            <MudSelectItem T="@EffectParameterType" Value="EffectParameterType.ColorArray">Color Array</MudSelectItem>
+        </MudSelect>
+
+        @* Value *@
+        <EffectParameterValueField Class="pa-1"
+                                   Label="Default Value"
+                                   Margin="Margin.Dense"
+                                   Value="@EffectParameter.Value"
+                                   ValueChanged="OnValueChangedAsync"
+                                   Variant="Variant.Outlined" />
+        <MudIconButton Class="pa-1" Variant="Variant.Filled" Size="Size.Small" Disabled="@DisableRemoveButton" Icon="@Icons.Material.Filled.Remove" OnClick="async () => await OnRemoveClicked.InvokeAsync(EffectParameter)"/>
+    </MudStack>
+</MudPaper>
+
+
+
+
+
+
+@code {
+
+    private string _paperClass => new CssBuilder(Class)
+        .AddClass("d-flex")
+        .Build();
+
+
+    private string _rowClass => new CssBuilder(Class)
+        .AddClass("flex-column")
+        .AddClass("pa-1")
+        .Build();
+
+        [Parameter]
+    public EventCallback<EffectParameter> OnRemoveClicked { get; set; }
+
+
+    [Parameter]
+    public bool DisableRemoveButton { get; set; } 
+
+    /// <summary>
+    /// The effect parameter of this row.
+    /// </summary>
+    [Parameter]
+    public EffectParameter EffectParameter { get; set; } = EffectParameter.New(EffectParameterType.Text);
+
+    /// <summary>
+    /// Effect parameter changed.
+    /// </summary>
+    [Parameter]
+    public EventCallback<EffectParameter> EffectParameterChanged { get; set; }
+
+    [Parameter]
+    public string Class { get; set; }
+
+    /// <summary>
+    /// Binding the Identifier.
+    /// </summary>
+    /// <param name="value">The value that we changed to.</param>
+    protected virtual async Task OnIdentifierValueChangedAsync(String value)
+    {
+        this.EffectParameter.Identifier = value;
+        await EffectParameterChanged.InvokeAsync(this.EffectParameter);
+    }
+
+
+    /// <summary>
+    /// Binding the Description.
+    /// </summary>
+    /// <param name="value">The value that we changed to.</param>
+    protected virtual async Task OnDescriptionValueChangedAsync(String value)
+    {
+        EffectParameter.Description = value;
+        await EffectParameterChanged.InvokeAsync(EffectParameter);
+    }
+
+
+    /// <summary>
+    /// Binding the Parameter Type.
+    /// </summary>
+    /// <param name="value">The value that we changed to.</param>
+    protected virtual async Task OnParameterTypeChangedAsync(EffectParameterType value)
+    {
+
+        EffectParameter.ParameterType = value;
+        StateHasChanged();
+        await EffectParameterChanged.InvokeAsync(EffectParameter);
+    }
+
+
+
+    /// <summary>
+    /// Binding the Value.
+    /// </summary>
+    /// <param name="value">The value object Boxed.</param>
+    protected virtual async Task OnValueChangedAsync(object? value)
+    {
+        EffectParameter.Value = value;
+        await EffectParameterChanged.InvokeAsync(EffectParameter);
+    }
+
+}

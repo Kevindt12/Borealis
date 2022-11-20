@@ -17,9 +17,16 @@ internal sealed class UdpDeviceConnection : IDeviceConnection
     private readonly ILogger<UdpDeviceConnection> _logger;
     private readonly UdpClient _udpClient;
 
+    private bool _isConnected;
+
 
     /// <inheritdoc />
     public Device Device { get; }
+
+    /// <summary>
+    /// The timeout when waiting for response.
+    /// </summary>
+    public int Timeout { get; set; } = 10000;
 
 
     protected UdpDeviceConnection(ILogger<UdpDeviceConnection> logger, Device device)
@@ -41,6 +48,7 @@ internal sealed class UdpDeviceConnection : IDeviceConnection
         try
         {
             await connection.SendPacketAsync(CommunicationPacket.CreateConnectionPacket());
+            connection._isConnected = true;
         }
         catch (TimeoutException e)
         {
@@ -62,7 +70,7 @@ internal sealed class UdpDeviceConnection : IDeviceConnection
     {
         CancellationTokenSource cts = new CancellationTokenSource();
 
-        //cts.CancelAfter(8000);
+        cts.CancelAfter(Timeout);
 
         await _udpClient.SendAsync(packet.CreateBuffer(), CancellationToken.None);
 
@@ -71,9 +79,9 @@ internal sealed class UdpDeviceConnection : IDeviceConnection
         {
             UdpReceiveResult result = await _udpClient.ReceiveAsync(cts.Token);
 
-            CommunicationPacket recievePacket = CommunicationPacket.FromBuffer(result.Buffer);
+            CommunicationPacket receivePacket = CommunicationPacket.FromBuffer(result.Buffer);
 
-            if (!recievePacket.IsAcknowledgement)
+            if (!receivePacket.IsAcknowledgement)
             {
                 _logger.LogWarning("Did not receive a ack message.");
             }
@@ -88,15 +96,15 @@ internal sealed class UdpDeviceConnection : IDeviceConnection
 
 
     /// <inheritdoc />
-    public async ValueTask DisposeAsync()
+    public void Dispose()
     {
-        await SendPacketAsync(CommunicationPacket.CreateDisconnectionPacket());
+        _udpClient?.Dispose();
     }
 
 
     /// <inheritdoc />
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _udpClient?.Dispose();
+        await SendPacketAsync(CommunicationPacket.CreateDisconnectionPacket());
     }
 }

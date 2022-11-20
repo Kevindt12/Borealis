@@ -11,7 +11,7 @@ public class Animation : IEquatable<Animation>
     /// <summary>
     /// The name of the animation.
     /// </summary>
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
     /// <summary>
     /// The duration of the effect.
@@ -26,7 +26,7 @@ public class Animation : IEquatable<Animation>
     /// <summary>
     /// The effect of the animation.
     /// </summary>
-    public AnimationEffect Effect { get; set; }
+    public AnimationEffect Effect { get; init; } = default!;
 
 
     /// <summary>

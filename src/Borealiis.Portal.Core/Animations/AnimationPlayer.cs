@@ -49,10 +49,7 @@ internal class AnimationPlayer : LedstripInteractorBase
 
     private Engine CreateJavascriptEngine()
     {
-        return new Engine(options =>
-        {
-            // TODO: Add memory limits.
-        });
+        return new Engine();
     }
 
 
@@ -168,7 +165,8 @@ internal class AnimationPlayer : LedstripInteractorBase
             loopFunction.Invoke();
 
             // Now reading the colors form the colors array.
-            PixelColor[] colors = _engine.GetValue("Pixels").TryCast<PixelColor[]>();
+            PixelColor[] colors = ((object[])_engine.GetValue("Pixels").ToObject()).Cast<PixelColor>().ToArray();
+
             await SendColors(colors);
 
             await Task.Delay(Animation.Frequency / 1, _stoppingToken.Token);

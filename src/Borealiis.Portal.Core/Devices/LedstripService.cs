@@ -21,6 +21,7 @@ namespace Borealis.Portal.Core.Devices;
 internal class LedstripService : ILedstripService
 {
     private readonly ILogger<LedstripService> _logger;
+
     private readonly DeviceContext _deviceContext;
     private readonly LedstripContext _ledstripContext;
     private readonly AnimationPlayerFactory _animationPlayerFactory;
@@ -52,6 +53,7 @@ internal class LedstripService : ILedstripService
     /// <inheritdoc />
     public async Task StartAnimationOnLedstripAsync(Device device, Ledstrip ledstrip, Animation animation)
     {
+        _logger.LogDebug($"Starting animation {animation.Id} on ledstrip {ledstrip.Name}");
         IDeviceConnection? connection = _deviceContext.Connections.SingleOrDefault(c => c.Device == device);
 
         // Making sure that we have a connection.

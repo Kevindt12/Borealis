@@ -20,7 +20,7 @@ public class ConfigurationMessage : MessageBase
     /// This is used for incoming messages to decode.
     /// </summary>
     /// <param name="buffer"> </param>
-    protected ConfigurationMessage(ReadOnlyMemory<byte> buffer)
+    public ConfigurationMessage(ReadOnlyMemory<byte> buffer)
     {
         try
         {
@@ -35,14 +35,8 @@ public class ConfigurationMessage : MessageBase
     }
 
 
-    public static ConfigurationMessage FromBuffer(ReadOnlyMemory<byte> buffer)
-    {
-        return new ConfigurationMessage(buffer);
-    }
-
-
     /// <inheritdoc />
-    public override ReadOnlyMemory<Byte> SerializeMessage()
+    public override ReadOnlyMemory<Byte> Serialize()
     {
         string json = JsonSerializer.Serialize(Settings);
 

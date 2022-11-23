@@ -71,7 +71,7 @@ public sealed class ErrorMessage : MessageBase
     /// | 4 bytes |  byte  |      VAR Bytes        |
     /// |   int   |  byte  |  ReadOnlyMemory Bytes |
     /// <inheritdoc />
-    public override ReadOnlyMemory<Byte> SerializeMessage()
+    public override ReadOnlyMemory<Byte> Serialize()
     {
         // Getting the Variables.
         byte type = (byte)(Exception == null ? PayloadType.String : PayloadType.Exception);

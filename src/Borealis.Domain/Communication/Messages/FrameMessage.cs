@@ -16,7 +16,7 @@ public sealed class FrameMessage : MessageBase
     /// <summary>
     /// What color spectrum we are using.
     /// </summary>
-    public ColorSpectrum ColorSpectrum { get; protected set; }
+    public ColorSpectrum ColorSpectrum { get; }
 
     /// <summary>
     /// The colors of the ledstrip.
@@ -47,6 +47,7 @@ public sealed class FrameMessage : MessageBase
     /// The frame used to send to drivers.
     /// </summary>
     /// <param name="ledstripIndex"> The index of the ledstrip. </param>
+    /// <param name="colorSpectrum"> </param>
     /// <param name="colors"> The colors that we want to send. </param>
     public FrameMessage(byte ledstripIndex, ColorSpectrum colorSpectrum, ReadOnlyMemory<PixelColor> colors)
     {
@@ -56,7 +57,7 @@ public sealed class FrameMessage : MessageBase
     }
 
 
-    protected static ReadOnlyMemory<PixelColor> Deserialize3ByteColors(ReadOnlyMemory<byte> data)
+    private static ReadOnlyMemory<PixelColor> Deserialize3ByteColors(ReadOnlyMemory<byte> data)
     {
         PixelColor[] result = new PixelColor[data.Length / 3];
 
@@ -69,7 +70,7 @@ public sealed class FrameMessage : MessageBase
     }
 
 
-    protected static ReadOnlyMemory<PixelColor> Deserialize4ByteColors(ReadOnlyMemory<byte> data)
+    private static ReadOnlyMemory<PixelColor> Deserialize4ByteColors(ReadOnlyMemory<byte> data)
     {
         PixelColor[] result = new PixelColor[data.Length / 4];
 
@@ -82,7 +83,7 @@ public sealed class FrameMessage : MessageBase
     }
 
 
-    protected static ReadOnlyMemory<PixelColor> Deserialize5ByteColors(ReadOnlyMemory<byte> data)
+    private static ReadOnlyMemory<PixelColor> Deserialize5ByteColors(ReadOnlyMemory<byte> data)
     {
         PixelColor[] result = new PixelColor[data.Length / 5];
 
@@ -96,7 +97,7 @@ public sealed class FrameMessage : MessageBase
 
 
     /// <inheritdoc />
-    public override ReadOnlyMemory<Byte> SerializeMessage()
+    public override ReadOnlyMemory<Byte> Serialize()
     {
         // Creating the result based on the spectrum to get the right mount of bytes.
         // Note that we add 1 for the ledstrip index.

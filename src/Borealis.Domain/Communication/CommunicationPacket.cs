@@ -10,9 +10,6 @@ namespace Borealis.Domain.Communication;
 /// </summary>
 public readonly struct CommunicationPacket
 {
-    private readonly PacketIdentifier? _acknowledgementIdentifier;
-
-
     /// <summary>
     /// The identifier of the packet indicating what it is.
     /// </summary>
@@ -30,22 +27,10 @@ public readonly struct CommunicationPacket
     /// </summary>
     public bool IsEmpty => Payload != null;
 
-    // TODO: Make it look at the ID number not if the field is filled
-
     /// <summary>
     /// A flag indicating that this packet is a acknowledgement packet.
     /// </summary>
     public bool IsAcknowledgement => Identifier == PacketIdentifier.Acknowledge;
-
-
-    /// <summary>
-    /// A communicable packet to send to devices and back.
-    /// </summary>
-    /// <param name="acknowledgementIdentifier"> </param>
-    private CommunicationPacket(PacketIdentifier acknowledgementIdentifier)
-    {
-        _acknowledgementIdentifier = acknowledgementIdentifier;
-    }
 
 
     /// <summary>
@@ -59,8 +44,12 @@ public readonly struct CommunicationPacket
     }
 
 
+    /// <summary>
+    /// Reads a communication packet from a buffer.
+    /// </summary>
+    /// <param name="buffer"> The buffer we want to read from. </param>
+    /// <returns> A <see cref="CommunicationPacket" /> representing the packet that was send. </returns>
     public static CommunicationPacket FromBuffer(ReadOnlyMemory<byte> buffer)
-
     {
         return new CommunicationPacket(buffer);
     }
@@ -83,20 +72,21 @@ public readonly struct CommunicationPacket
     /// <summary>
     /// Creates a packet from a message.
     /// </summary>
-    /// <param name="message"> </param>
-    /// <returns> </returns>
-    /// <exception cref="InvalidOperationException"> </exception>
+    /// <param name="message"> The message we want to send. </param>
+    /// <returns> A <see cref="CommunicationPacket" /> that wraps around the message to be send. </returns>
+    /// <exception cref="InvalidOperationException"> When the message has not been implemented. </exception>
     public static CommunicationPacket CreatePacketFromMessage(MessageBase message)
     {
         return new CommunicationPacket
         {
             Identifier = message switch
             {
-                FrameMessage frameMessage => PacketIdentifier.Frame,
-                ErrorMessage errorMessage => PacketIdentifier.Error,
-                _                         => throw new InvalidOperationException("The message has not been implemented.")
+                FrameMessage frameMessage                 => PacketIdentifier.Frame,
+                ConfigurationMessage configurationMessage => PacketIdentifier.Configuration,
+                ErrorMessage errorMessage                 => PacketIdentifier.Error,
+                _                                         => throw new InvalidOperationException("The message has not been implemented.")
             },
-            Payload = message.SerializeMessage()
+            Payload = message.Serialize()
         };
     }
 
@@ -134,10 +124,10 @@ public readonly struct CommunicationPacket
     /// <exception cref="InvalidOperationException"> When the packet is already a acknowledgement packet </exception>
     public CommunicationPacket GenerateAcknowledgementPacket()
     {
-        // Making sure we can only make acknowledgements from non acknowledgement packets.
-        if (_acknowledgementIdentifier != null) throw new InvalidOperationException("This packet is already a Acknowledgement packet.");
+        // Making sure we can only make acknowledgement from non acknowledgement packets.
+        if (IsAcknowledgement) throw new InvalidOperationException("This packet is already a Acknowledgement packet.");
 
-        return new CommunicationPacket(Identifier)
+        return new CommunicationPacket
         {
             Identifier = PacketIdentifier.Acknowledge
         };
@@ -147,37 +137,57 @@ public readonly struct CommunicationPacket
     /// <summary>
     /// Returns the castes message payload that was received.
     /// </summary>
-    /// <typeparam name="TMessageType"> </typeparam>
-    /// <returns> </returns>
+    /// <remarks>
+    /// Note that not all packets have a payload. Read the messages documentation for more information.
+    /// </remarks>
+    /// <typeparam name="TMessageType"> The type of message that we need to read if we need to read it at all. </typeparam>
+    /// <returns>
+    /// <see cref="null" /> if there is no payload else it will read a message with a base class of
+    /// <see cref="MessageBase" />.
+    /// </returns>
+    /// <exception cref="IndexOutOfRangeException">
+    /// Thrown when the
+    /// <see cref="PacketIdentifier" /> is not in a valid state.
+    /// </exception>
     public TMessageType ReadPayload<TMessageType>() where TMessageType : MessageBase?
     {
-        return Identifier switch
+        return (Identifier switch
         {
-            PacketIdentifier.KeepAlive   => null,
-            PacketIdentifier.Disconnect  => null,
-            PacketIdentifier.Connect     => null,
-            PacketIdentifier.Error       => new ErrorMessage(Payload!.Value) as TMessageType,
-            PacketIdentifier.Frame       => new FrameMessage(Payload!.Value) as TMessageType,
-            PacketIdentifier.Acknowledge => null
-        };
+            PacketIdentifier.KeepAlive     => null,
+            PacketIdentifier.Disconnect    => null,
+            PacketIdentifier.Connect       => null,
+            PacketIdentifier.Error         => new ErrorMessage(Payload!.Value) as TMessageType,
+            PacketIdentifier.Frame         => new FrameMessage(Payload!.Value) as TMessageType,
+            PacketIdentifier.Configuration => new ConfigurationMessage(Payload!.Value) as TMessageType,
+            PacketIdentifier.Acknowledge   => null,
+            _                              => throw new IndexOutOfRangeException("The PacketIdentifier was out of range.")
+        })!;
     }
 
 
     /// <summary>
     /// Creates the final buffer to be send.
     /// </summary>
+    /// <remarks>
+    /// Packet buffer being creates has the following format 1 bytes for the
+    /// <see cref="Identifier" /> then the payload <see cref="Payload" />.
+    /// </remarks>
     /// <returns> </returns>
     public ReadOnlyMemory<byte> CreateBuffer()
     {
-        int length = Payload?.Length ?? 0;
+        // Gets the length of the payload
+        int payloadLength = Payload?.Length ?? 0;
 
         // Creating the buffer wrapper around the frame.
         byte[] buffer = new byte[(Payload?.Length ?? 0) + 1];
 
+        // Writing the id.
         buffer[0] = (byte)Identifier;
 
+        // Writing the payload.
         Payload?.ToArray().CopyTo(buffer, 1);
 
+        // Sending the buffer back.
         return buffer;
     }
 }

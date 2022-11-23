@@ -16,5 +16,5 @@ public abstract class MessageBase
     /// Serializes the message into a buffer to be send.
     /// </summary>
     /// <returns> A <see cref="ReadOnlyMemory{Byte}" /> of bytes as the buffer to be send. </returns>
-    public abstract ReadOnlyMemory<byte> SerializeMessage();
+    public abstract ReadOnlyMemory<byte> Serialize();
 }

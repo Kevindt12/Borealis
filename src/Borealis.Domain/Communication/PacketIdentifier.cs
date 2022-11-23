@@ -36,6 +36,11 @@ public enum PacketIdentifier : byte
     Disconnect = 4,
 
     /// <summary>
+    /// A configuration message that is used to set the new configuration
+    /// </summary>
+    Configuration = 5,
+
+    /// <summary>
     /// A error message we want to be relayed.
     /// </summary>
     Error = 99

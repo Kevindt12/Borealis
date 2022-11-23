@@ -5,8 +5,10 @@ using FluentValidation;
 using System.Linq;
 using System.Reflection;
 
+using Borealis.Drivers.Rpi.Udp.Connections;
 using Borealis.Drivers.Rpi.Udp.Contexts;
 using Borealis.Drivers.Rpi.Udp.Ledstrips;
+using Borealis.Drivers.Rpi.Udp.Options;
 using Borealis.Drivers.Rpi.Udp.Services;
 
 using NLog;
@@ -19,6 +21,9 @@ namespace Borealis.Drivers.Rpi.Udp;
 
 public static class Program
 {
+    private static IConfiguration _configuration;
+
+
     public static async Task Main(string[] args)
     {
         IHost host = Host.CreateDefaultBuilder(args)
@@ -36,9 +41,15 @@ public static class Program
     {
         // Middleware
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly(), ServiceLifetime.Transient);
+        services.AddOptions();
+
+        // Configuration
+        services.Configure<ServerOptions>(_configuration.GetSection(ServerOptions.Name));
 
         // Factories.
         services.AddTransient<LedstripProxyFactory>();
+        services.AddSingleton<TcpClientHandlerFactory>();
+        services.AddSingleton<UdpServerFactory>();
 
         // State
         services.AddSingleton<LedstripContext>();
@@ -65,5 +76,7 @@ public static class Program
         IConfiguration config = builder.SetBasePath(Directory.GetCurrentDirectory())
                                        .AddJsonFile("appsettings.json", false, true)
                                        .Build();
+
+        _configuration = config;
     }
 }

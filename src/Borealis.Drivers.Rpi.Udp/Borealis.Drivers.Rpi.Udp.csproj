@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <Folder Include="Exceptions\" />
-    <Folder Include="Connections\" />
+    <Folder Include="Options\" />
     <Folder Include="Validation\" />
   </ItemGroup>
 </Project>

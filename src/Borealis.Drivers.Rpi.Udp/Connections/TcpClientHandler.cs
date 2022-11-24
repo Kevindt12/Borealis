@@ -76,6 +76,11 @@ public class TcpClientHandler : IDisposable, IAsyncDisposable
                     CommunicationPacket packet = CommunicationPacket.FromBuffer(buffer);
                     await HandleIncomingPacket(packet).ConfigureAwait(false);
                 }
+                catch (SocketException socketException)
+                {
+                    _logger.LogError(socketException, "Socket exception.");
+                    Disconnect?.Invoke(this, EventArgs.Empty);
+                }
                 catch (IOException e)
                 {
                     _logger.LogError(e, "Error with reading data from the tcp server.");
@@ -115,8 +120,7 @@ public class TcpClientHandler : IDisposable, IAsyncDisposable
     /// <returns> </returns>
     protected virtual async Task HandleKeepAliveAsync(CommunicationPacket packet)
     {
-        // HACK: Maybe this should be a keep alive packet that we send back.
-        await SendAcknowledgment(packet);
+        await SendAcknowledgment(CommunicationPacket.CreateKeepAlive());
     }
 
 

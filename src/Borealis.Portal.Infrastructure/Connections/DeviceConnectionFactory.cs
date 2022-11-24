@@ -55,13 +55,13 @@ internal class DeviceConnectionFactory : IDeviceConnectionFactory
     }
 
 
-    protected virtual async Task<UdpDeviceConnection> CreateUdpConnection(Device device, CancellationToken token = default)
+    protected virtual async Task<DeviceConnection> CreateUdpConnection(Device device, CancellationToken token = default)
     {
-        UdpDeviceConnection? connection = default;
+        DeviceConnection? connection = default;
 
         try
         {
-            connection = await UdpDeviceConnection.CreateConnectionAsync(_loggerFactory.CreateLogger<UdpDeviceConnection>(), device);
+            connection = await DeviceConnection.CreateConnectionAsync(_loggerFactory.CreateLogger<DeviceConnection>(), device);
 
             return connection;
         }

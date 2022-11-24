@@ -9,11 +9,5 @@ public class ServerOptions
     /// <summary>
     /// The Udp frame receive port.
     /// </summary>
-    public int UdpServerPort { get; set; } = 8885;
-
-
-    /// <summary>
-    /// The tcp server.
-    /// </summary>
-    public int TcpServerPort { get; set; } = 8889;
+    public int ServerPort { get; set; } = 8885;
 }

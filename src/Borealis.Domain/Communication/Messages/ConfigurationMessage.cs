@@ -35,6 +35,12 @@ public class ConfigurationMessage : MessageBase
     }
 
 
+    public static ConfigurationMessage FromBuffer(ReadOnlyMemory<byte> buffer)
+    {
+        return new ConfigurationMessage(buffer);
+    }
+
+
     /// <inheritdoc />
     public override ReadOnlyMemory<Byte> Serialize()
     {

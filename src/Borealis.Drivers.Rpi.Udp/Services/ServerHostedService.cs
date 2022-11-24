@@ -42,7 +42,7 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
         _hostApplicationLifetime = hostApplicationLifetime;
         _ledstripContext = ledstripContext;
 
-        _tcpServer = TcpListener.Create(serverOptions.Value.TcpServerPort);
+        _tcpServer = TcpListener.Create(serverOptions.Value.ServerPort);
     }
 
 
@@ -53,7 +53,7 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
         await StartUdpServerAsync(cancellationToken);
 
         _logger.LogInformation("Starting the tcp server.");
-        await StartTcpServerAsync(cancellationToken);
+        await StartTcpServer(cancellationToken);
     }
 
 
@@ -62,7 +62,7 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
         try
         {
             // Getting the port.
-            int port = _serverOptions.UdpServerPort;
+            int port = _serverOptions.ServerPort;
 
             // Creating the server.
             _logger.LogInformation($"Starting UDP Server on port {port}.");
@@ -109,13 +109,13 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
     }
 
 
-    protected virtual async Task StartTcpServerAsync(CancellationToken token)
+    protected virtual async Task StartTcpServer(CancellationToken token)
     {
         // Starting the tcp server.
         _tcpServer.Start();
 
         // Not looping we only want to have a single connection.
-        await Task.Factory.StartNew(async () => await StartWaitingForConnection(token), token).ConfigureAwait(false);
+        _ = await Task.Factory.StartNew(async () => await StartWaitingForConnection(token), token).ConfigureAwait(false);
     }
 
 
@@ -139,7 +139,9 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
         _logger.LogInformation("Disconnection request came in. Clearing all ledstrips.");
         _ledstripContext.ClearAllLedstrips();
 
-        // Start the tcp server and listen for clients.
+        // Disposing of the handler.
+        _logger.LogDebug("Disposing the tcp client handler.");
+        await _currentTcpClientHandler.DisposeAsync();
         _currentTcpClientHandler = null;
 
         // Starting the listener to wait for a connection again.

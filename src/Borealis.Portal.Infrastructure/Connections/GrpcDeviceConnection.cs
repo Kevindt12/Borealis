@@ -24,6 +24,27 @@ public class GrpcDeviceConnection : IDeviceConnection
     public Device Device { get; }
 
 
+    /// <inheritdoc />
+    public async ValueTask SendFrameAsync(FrameMessage frameMessage, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+
+    /// <inheritdoc />
+    public async Task SendConfirmedFrameAsync(FrameMessage frameMessage, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+
+    /// <inheritdoc />
+    public async Task SendConfigurationAsync(ConfigurationMessage configuration, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+
     protected GrpcDeviceConnection(ILogger<GrpcDeviceConnection> logger, Device device)
     {
         Device = device;

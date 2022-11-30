@@ -5,7 +5,7 @@
 
 
 
-<MonacoEditor @ref="@_editor" CssClass="pa-2 d-flex" Id="@Id.ToString()" ConstructionOptions="EditorConstructionOptions" OnKeyUp="OnKeyDownAsync" />
+<MonacoEditor @ref="@_editor" CssClass="pa-2 d-flex flex-initial" Id="@Id.ToString()" ConstructionOptions="EditorConstructionOptions" OnKeyUp="OnKeyDownAsync" />
 
 
 
@@ -86,7 +86,8 @@
                 Language = Language,
                 CodeLens = true,
                 Value = Value,
-                Dimension = new Dimension() { Height = Height, Width = Width },
+                Padding = new EditorPaddingOptions() {Top = 10, Bottom = 10},
+                Dimension = new Dimension() { Height = Height, Width = Width }
 
             };
     }

@@ -5,14 +5,14 @@
 @using Borealis.Portal.Web.Components;
 @using System.Reflection.Metadata
 @using BlazorMonaco
+@using Borealis.Domain.Devices
 @using Borealis.Portal.Web.Extensions
 
 
 
 @*
-    TODO: Dialog does not close when effect has been created
-    TODO: No feedback to the user that we created a effect and that its saved.
-    TODO: Edit margins because the ubttons are too far to the sids.
+
+    TODO: Edit margins because the buttons are too far to the sids.
 
 
 *@
@@ -30,7 +30,7 @@
 
 @* The action buttons. *@
 <MudStack Class="py-4" AlignItems="AlignItems.Start" Justify="Justify.SpaceBetween" Row="true">
-    
+
     @* The add button.*@
     <MudButton Class="pa-2"
                Size="Size.Small"
@@ -38,9 +38,9 @@
                StartIcon="@Icons.Material.Filled.Add"
                Color="Color.Primary"
                OnClick="OnAddEffect">Add</MudButton>
-               
+
     @* The Save button, *@
-    <MudButton Class="pa-2"
+    <MudButton Class="pa-2 mr-5"
                Size="Size.Small"
                Variant="Variant.Filled"
                StartIcon="@Icons.Material.Filled.Save"
@@ -56,29 +56,29 @@
          Outlined="true"
          Border="true" AlwaysShowScrollButtons="false"
          Position="MudBlazor.Position.Left"
-         @bind-ActivePanelIndex="SelectedEffectIndex" >
+         @bind-ActivePanelIndex="SelectedEffectIndex">
 
     @foreach (Effect effect in Effects)
     {
-        <MudTabPanel Class="pa-2" Text="@effect.Name" >
+        @* Each tab panel. *@
+        <MudTabPanel Class="pa-2" Text="@effect.Name">
             <MudStack>
 
-                
-                @* Javascript editor *@
 
-                <MudPaper MinHeight="500" MaxHeight="800"  Elevation="2" >
-                    <MudText Class="px-4 py-2" Typo="@Typo.h5" Align="@Align.Left" >Editor</MudText>
-                    <MudDivider DividerType="@DividerType.Middle" FlexItem="@true"/>
-                    <CodeEditor Id="@effect.Id" @bind-Value="@effect.Javascript" Width="1000"/>
+                @* Javascript editor *@
+                <MudPaper MinHeight="500" MaxHeight="800" Elevation="2">
+                    <MudText Class="px-4 py-2" Typo="@Typo.h5" Align="@Align.Left">Editor</MudText>
+                    <MudDivider DividerType="@DividerType.Middle" FlexItem="@true" />
+                    <CodeEditor Id="@effect.Id" @bind-Value="@effect.Javascript" Width="1000" />
                 </MudPaper>
 
-                <MudDivider DividerType="@DividerType.Inset"/>
+                <MudDivider DividerType="@DividerType.Inset" />
 
                 @* Javascript Parameters *@
-                <MudPaper Class="px-4 py-2" Elevation="2" >
-                    <MudText Class="px-4 py-2" Typo="@Typo.h5" Align="@Align.Left" >Parameters</MudText>
+                <MudPaper Class="px-4 py-2" Elevation="2">
+                    <MudText Class="px-4 py-2" Typo="@Typo.h5" Align="@Align.Left">Parameters</MudText>
 
-                    <MudStack Spacing="1"  >
+                    <MudStack Spacing="1">
                         @* All rows. *@
                         @for (int i = 0; i < effect.EffectParameters.Count; i++)
                         {
@@ -89,11 +89,24 @@
                         }
 
                         @* Empty new row. *@
-                        <EffectParameterRow Class="pa-1" DisableRemoveButton="@true" EffectParameter="@EffectParameter.New(EffectParameterType.Text)" EffectParameterChanged="@((p) => { OnEffectParameterAdded(p, effect);  })"/>
+                        <EffectParameterRow Class="pa-1" DisableRemoveButton="@true" EffectParameter="@EffectParameter.New(EffectParameterType.Text)" EffectParameterChanged="@((p) => { OnEffectParameterAdded(p, effect);  })" />
                     </MudStack>
-
                 </MudPaper>
-                
+
+                <MudDivider DividerType="@DividerType.Inset" />
+
+
+                @* Testing *@
+                <MudPaper Class="px-4 py-2" Outlined="true">
+                    <MudText Class="px-4 py-2" Typo="@Typo.h5" Align="@Align.Left">Testing</MudText>
+
+                    <MudStack Justify="Justify.SpaceAround">
+                        <EffectEmulator Effect="effect" />
+
+                    </MudStack>
+                </MudPaper>
+
+
             </MudStack>
         </MudTabPanel>
     }
@@ -146,9 +159,8 @@
     /// <inheritdoc />
     protected override async Task OnParametersSetAsync()
     {
+        _logger.LogInformation($"Loading effects page.");
         Effects = new List<Effect>(await _effectManager.GetEffectsAsync());
-
-        // Make sure we select the first effect.
 
         await base.OnParametersSetAsync();
     }
@@ -247,6 +259,7 @@
         await _effectManager.SaveEffectAsync(effect);
         Effects.Add(effect);
 
+        // Notify the user that we have created the effect.
         _logger.LogInformation($"Created effect {effect.Name}.");
         _snackbar.AddSuccess($"Created effect!");
 
@@ -256,7 +269,7 @@
         StateHasChanged();
 
     }
-    
+
 
 
 

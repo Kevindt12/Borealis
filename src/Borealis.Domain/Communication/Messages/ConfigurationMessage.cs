@@ -35,6 +35,12 @@ public class ConfigurationMessage : MessageBase
     }
 
 
+    public ConfigurationMessage(LedstripSettings settings)
+    {
+        Settings = settings;
+    }
+
+
     public static ConfigurationMessage FromBuffer(ReadOnlyMemory<byte> buffer)
     {
         return new ConfigurationMessage(buffer);

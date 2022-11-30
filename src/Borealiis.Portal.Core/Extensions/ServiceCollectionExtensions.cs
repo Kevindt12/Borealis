@@ -9,7 +9,6 @@ using System.Linq;
 using Borealis.Portal.Core.Animations;
 using Borealis.Portal.Core.Devices;
 using Borealis.Portal.Core.Effects;
-using Borealis.Portal.Core.Interaction;
 using Borealis.Portal.Domain.Animations;
 using Borealis.Portal.Domain.Devices;
 using Borealis.Portal.Domain.Effects;
@@ -31,7 +30,7 @@ public static class ServiceCollectionExtensions
         services.AddDataServices();
 
         // Contexts
-        services.AddSingleton<LedstripContext>();
+        services.AddSingleton<AnimationContext>();
         services.AddSingleton<DeviceContext>();
 
         // Services
@@ -44,7 +43,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IEffectManager, EffectManager>();
 
         // Factories
-        services.AddTransient<AnimationPlayerFactory>();
-        services.AddTransient<SolidColorInteractorFactory>();
+        services.AddTransient<EffectEngineFactory>();
+        services.AddTransient<IAnimationPlayerFactory, AnimationPlayerFactory>();
     }
 }

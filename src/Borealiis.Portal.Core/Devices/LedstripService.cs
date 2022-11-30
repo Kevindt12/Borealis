@@ -5,11 +5,10 @@ using System.Linq;
 using Borealis.Domain.Animations;
 using Borealis.Domain.Devices;
 using Borealis.Domain.Effects;
-using Borealis.Portal.Core.Animations;
 using Borealis.Portal.Core.Exceptions;
-using Borealis.Portal.Core.Interaction;
+using Borealis.Portal.Domain.Animations;
+using Borealis.Portal.Domain.Connections;
 using Borealis.Portal.Domain.Devices;
-using Borealis.Portal.Infrastructure.Connections;
 
 using Microsoft.Extensions.Logging;
 
@@ -23,96 +22,91 @@ internal class LedstripService : ILedstripService
     private readonly ILogger<LedstripService> _logger;
 
     private readonly DeviceContext _deviceContext;
-    private readonly LedstripContext _ledstripContext;
-    private readonly AnimationPlayerFactory _animationPlayerFactory;
-    private readonly SolidColorInteractorFactory _solidColorInteractorFactory;
+    private readonly AnimationContext _animationContext;
+    private readonly IAnimationPlayerFactory _animationPlayerFactory;
 
 
     public LedstripService(ILogger<LedstripService> logger,
                            DeviceContext deviceContext,
-                           LedstripContext ledstripContext,
-                           AnimationPlayerFactory animationPlayerFactory,
-                           SolidColorInteractorFactory solidColorInteractorFactory
+                           AnimationContext animationContext,
+                           IAnimationPlayerFactory animationPlayerFactory
     )
     {
         _logger = logger;
         _deviceContext = deviceContext;
-        _ledstripContext = ledstripContext;
+        _animationContext = animationContext;
         _animationPlayerFactory = animationPlayerFactory;
-        _solidColorInteractorFactory = solidColorInteractorFactory;
     }
 
 
     /// <inheritdoc />
-    public bool IsLedstripBusy(Device device, Ledstrip ledstrip)
+    public bool IsLedstripBusy(Ledstrip ledstrip)
     {
-        return _ledstripContext.Interactors.Any(a => a.Device == device);
+        return _animationContext.Players.Any(a => a.Ledstrip.Ledstrip == ledstrip);
     }
 
 
     /// <inheritdoc />
-    public async Task StartAnimationOnLedstripAsync(Device device, Ledstrip ledstrip, Animation animation)
+    public async Task StartAnimationOnLedstripAsync(Ledstrip ledstrip, Animation animation)
     {
         _logger.LogDebug($"Starting animation {animation.Id} on ledstrip {ledstrip.Name}");
-        IDeviceConnection? connection = _deviceContext.Connections.SingleOrDefault(c => c.Device == device);
+        ILedstripConnection? connection = _deviceContext.LedstripConnections.SingleOrDefault(c => c.Ledstrip == ledstrip);
 
         // Making sure that we have a connection.
-        if (connection is null) throw new DeviceException($"Device {device.Name} is not connected.", device);
+        if (connection is null) throw new DeviceException("Device  is not connected.");
 
         // Creating the player.
-        AnimationPlayer player = _animationPlayerFactory.CreateAnimationPlayer(connection, animation, ledstrip);
+        IAnimationPlayer player = _animationPlayerFactory.CreateAnimationPlayer(animation, connection);
 
         // Starting and saving the player.
-        await _ledstripContext.AddInteractorAndStartAsync(player);
+        await _animationContext.AddAnimationPlayerAsync(player);
     }
 
 
     /// <inheritdoc />
-    public async Task StopLedstripAsync(Device device, Ledstrip ledstrip)
+    public async Task StopLedstripAsync(Ledstrip ledstrip)
     {
-        LedstripInteractorBase interactor = _ledstripContext.Interactors.SingleOrDefault(p => p.Device == device && p.Ledstrip == ledstrip) ??
-                                            throw new AnimationException($"There was no animation playing on device {device.Name}, ledstrip {ledstrip.Name}.");
-
-        await _ledstripContext.RemoveAndStopInteractorAsync(interactor);
-    }
-
-
-    /// <inheritdoc />
-    public async Task TestLedstripAsync(Device device, Ledstrip ledstrip)
-    {
-        IDeviceConnection? connection = _deviceContext.Connections.SingleOrDefault(c => c.Device == device);
-
-        // Making sure that we have a connection.
-        if (connection is null) throw new DeviceException($"Device {device.Name} is not connected.", device);
-
-        //// TODO: Switch this to a interactor
-        //await connection.SendFrameAsync(new LedstripFrame
-        //                                    { LedstripIndex = 0, Colors = Enumerable.Repeat(Color.Red.ToPixelColor(), ledstrip.Length).ToArray() });
-    }
-
-
-    /// <inheritdoc />
-    public async Task SetSolidColorAsync(Device device, Ledstrip ledstrip, PixelColor color, CancellationToken token = default)
-    {
-        IDeviceConnection? connection = _deviceContext.Connections.SingleOrDefault(c => c.Device == device);
-
-        // Making sure that we have a connection.
-        if (connection is null) throw new DeviceException($"Device {device.Name} is not connected.", device);
+        _logger.LogDebug($"Stopping ledstrip {ledstrip.Name}");
+        ILedstripConnection connection = _deviceContext.LedstripConnections.SingleOrDefault(c => c.Ledstrip == ledstrip) ?? throw new DeviceException("Device is not connected.");
 
         // Creating the player.
-        SolidColorInteractor interactor = _solidColorInteractorFactory.CreateSolidColorInteractor(connection, ledstrip, color);
+        IAnimationPlayer? player;
 
-        // Starting and saving the player.
-        await _ledstripContext.AddInteractorAndStartAsync(interactor);
+        if ((player = _animationContext.GetAnimationPlayerForLedstripOrDefault(connection)) != null)
+        {
+            await player.StopAsync();
+            await _animationContext.RemoveAnimationPlayerAsync(player);
+        }
+
+        // Clear the ledstrip.
+        await connection.SetLedstripPixelsAsync(Enumerable.Repeat((PixelColor)Color.Black, ledstrip.Length).ToArray());
     }
 
 
     /// <inheritdoc />
-    public Animation? GetAnimationPlayingOnLedstripOrDefault(Device device, Ledstrip ledstrip)
+    public async Task TestLedstripAsync(Ledstrip ledstrip)
     {
-        LedstripInteractorBase? interactor = _ledstripContext.Interactors.SingleOrDefault(x => x.Device == device && x.Ledstrip == ledstrip);
+        throw new NotImplementedException();
+    }
 
-        if (interactor is AnimationPlayer player)
+
+    /// <inheritdoc />
+    public async Task SetSolidColorAsync(Ledstrip ledstrip, PixelColor color, CancellationToken token = default)
+    {
+        // Creating the player.
+        ILedstripConnection connection = _deviceContext.LedstripConnections.SingleOrDefault(c => c.Ledstrip == ledstrip) ?? throw new DeviceException("Device is not connected.");
+
+        // Setting the ledstrip color.
+        await connection.SetLedstripPixelsAsync(Enumerable.Repeat(color, ledstrip.Length).ToArray(), token);
+    }
+
+
+    /// <inheritdoc />
+    public Animation? GetAnimationPlayingOnLedstripOrDefault(Ledstrip ledstrip)
+    {
+        IAnimationPlayer? player = _animationContext.Players.SingleOrDefault(x => x.Ledstrip.Ledstrip == ledstrip);
+
+        if (player != null)
         {
             return player.Animation;
         }

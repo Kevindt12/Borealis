@@ -7,19 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Protos\portal.proto" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.49.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Borealis.Portal.Domain\Borealis.Portal.Domain.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Protobuf Include="Protos\portal.proto" GrpcServices="Client" />
   </ItemGroup>
 
 </Project>

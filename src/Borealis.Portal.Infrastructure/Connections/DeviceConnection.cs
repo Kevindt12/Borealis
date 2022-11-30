@@ -1,7 +1,6 @@
 ﻿using System.Net.Sockets;
 
 using Borealis.Domain.Communication;
-using Borealis.Domain.Communication.Messages;
 using Borealis.Portal.Domain.Devices;
 using Borealis.Portal.Domain.Exceptions;
 
@@ -12,17 +11,13 @@ using Microsoft.Extensions.Logging;
 namespace Borealis.Portal.Infrastructure.Connections;
 
 
-internal class DeviceConnection : IDeviceConnection
+internal class CombinedDeviceConnection : DeviceConnectionBase
 {
-    private readonly ILogger<DeviceConnection> _logger;
+    private readonly ILogger<CombinedDeviceConnection> _logger;
     private readonly UdpClient _udpClient;
     private readonly TcpClient _tcpClient;
     private readonly NetworkStream _stream;
 
-    private bool _isConnected;
-
-    /// <inheritdoc />
-    public Device Device { get; }
 
     /// <summary>
     /// The timeout when waiting for response.
@@ -30,92 +25,85 @@ internal class DeviceConnection : IDeviceConnection
     public int Timeout { get; set; } = 10000;
 
 
-    protected DeviceConnection(ILogger<DeviceConnection> logger, Device device)
+    protected CombinedDeviceConnection(ILogger<CombinedDeviceConnection> logger, Device device, TcpClient tcpClient, UdpClient udpClient) : base(logger, device)
     {
-        if (device.ConnectionType != ConnectionType.Udp) throw new ApplicationException("Cannot create a Udp connection with a device that has been set to something else.");
         _logger = logger;
 
-        Device = device;
-        _udpClient = new UdpClient();
-        _tcpClient = new TcpClient();
+        _udpClient = udpClient;
+        _tcpClient = tcpClient;
+        _stream = tcpClient.GetStream();
     }
 
 
-    public static async Task<DeviceConnection> CreateConnectionAsync(ILogger<DeviceConnection> logger, Device device)
+    public static async Task<CombinedDeviceConnection> CreateConnectionAsync(ILogger<CombinedDeviceConnection> logger, Device device, CancellationToken token = default)
     {
-        DeviceConnection connection = new DeviceConnection(logger, device);
+        // The clients.
+        TcpClient tcpClient = new TcpClient();
+        UdpClient udpClient = new UdpClient();
 
         try
         {
-            await connection.ConnectAsync();
+            // TCP
+            logger.LogTrace($"Connecting to device {device.Id} with tcp & udp connection on {device.EndPoint}.");
+            await tcpClient.ConnectAsync(device.EndPoint, token);
+
+            // UDP
+            udpClient.Connect(device.EndPoint);
+        }
+        catch (SocketException e)
+        {
+            // Cleaning up the clients if they fail.
+            tcpClient.Dispose();
+            udpClient.Dispose();
+
+            throw new DeviceConnectionException($"Unable to create connection with device {device.Id}.", e, device);
         }
         catch (Exception e)
         {
-            await connection.DisposeAsync();
+            // Cleaning up the clients if they fail.
+            tcpClient.Dispose();
+            udpClient.Dispose();
 
             throw;
         }
 
-        connection._isConnected = true;
-
-        return connection;
+        return new CombinedDeviceConnection(logger, device, tcpClient, udpClient);
     }
 
 
     /// <inheritdoc />
-    public async ValueTask SendFrameAsync(FrameMessage frameMessage, CancellationToken token = default)
+    internal override async ValueTask SendUnconfirmedPacketAsync(CommunicationPacket packet)
     {
-        await SendUdpPacketAsync(CommunicationPacket.CreatePacketFromMessage(frameMessage), token);
+        _logger.LogTrace($"Sending Udp message to device {Device.Id}.");
+        await _udpClient.SendAsync(packet.CreateBuffer(), CancellationToken.None);
     }
 
 
     /// <inheritdoc />
-    public async Task SendConfirmedFrameAsync(FrameMessage frameMessage, CancellationToken token = default)
-    {
-        _logger.LogTrace($"Sending confirmed trace to device {Device.EndPoint}.");
-        await SendTcpPacketAsync(CommunicationPacket.CreatePacketFromMessage(frameMessage), token);
-    }
-
-
-    /// <inheritdoc />
-    public async Task SendConfigurationAsync(ConfigurationMessage configuration, CancellationToken token = default)
-    {
-        _logger.LogTrace($"Sending Configuration to device {Device.Id}.");
-        await SendTcpPacketAsync(CommunicationPacket.CreatePacketFromMessage(configuration), token);
-    }
-
-
-    protected virtual async Task ConnectAsync(CancellationToken token = default)
-    {
-        try
-        {
-            // TCP
-            _logger.LogTrace($"Connecting to device {Device.Id}.");
-            await _tcpClient.ConnectAsync(Device.EndPoint, token);
-
-            // UDP
-            _udpClient.Connect(Device.EndPoint);
-        }
-        catch (SocketException e)
-        {
-            _logger.LogTrace(e, $"Socket exception when connecting to device {Device.Id}.");
-
-            throw new DeviceConnectionException("Could not establish a connection with the device.", e, Device);
-        }
-    }
-
-
-    protected virtual async ValueTask SendTcpPacketAsync(CommunicationPacket packet, CancellationToken token = default)
+    internal override async Task<CommunicationPacket?> SendConfirmedPacketAsync(CommunicationPacket packet, CancellationToken token = default)
     {
         // Creating a time out.
-        CancellationTokenSource cts = new CancellationTokenSource();
-        cts.CancelAfter(Timeout);
 
         try
         {
             _logger.LogTrace($"Sending TCP message to device {Device.Id}.");
-            await _stream.WriteAsync(packet.CreateBuffer(), cts.Token);
-            await _stream.FlushAsync(cts.Token);
+            await _stream.WriteAsync(packet.CreateBuffer(), token);
+            await _stream.FlushAsync(token);
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(Timeout);
+
+            try
+            {
+                Memory<byte> buffer = new Memory<byte>();
+                _ = await _stream.ReadAsync(buffer, cts.Token);
+
+                return CommunicationPacket.FromBuffer(buffer);
+            }
+            catch (OperationCanceledException e)
+            {
+                return null;
+            }
         }
         catch (SocketException e)
         {
@@ -124,27 +112,7 @@ internal class DeviceConnection : IDeviceConnection
     }
 
 
-    protected virtual async ValueTask SendUdpPacketAsync(CommunicationPacket packet, CancellationToken token = default)
-    {
-        _logger.LogTrace($"Sending Udp message to device {Device.Id}.");
-        await _udpClient.SendAsync(packet.CreateBuffer(), CancellationToken.None);
-    }
-
-
-    private bool _disposed;
-
-
-    /// <inheritdoc />
-    public void Dispose()
-    {
-        if (!_disposed) return;
-
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-
-    protected virtual void Dispose(bool disposing)
+    protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
@@ -154,27 +122,11 @@ internal class DeviceConnection : IDeviceConnection
     }
 
 
-    protected virtual async ValueTask DisposeAsyncCore()
+    protected override async ValueTask DisposeAsyncCore()
     {
-        // This might happen when 
-        if (_tcpClient.Connected)
-        {
-            await SendTcpPacketAsync(CommunicationPacket.CreateDisconnectionPacket());
-        }
+        await SendConfirmedPacketAsync(CommunicationPacket.CreateDisconnectionPacket());
 
         _tcpClient?.Dispose();
         _udpClient?.Dispose();
-    }
-
-
-    /// <inheritdoc />
-    public async ValueTask DisposeAsync()
-    {
-        if (!_disposed) return;
-
-        await DisposeAsyncCore();
-
-        Dispose(false);
-        GC.SuppressFinalize(this);
     }
 }

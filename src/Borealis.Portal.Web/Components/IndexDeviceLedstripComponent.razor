@@ -125,7 +125,7 @@
         Animations = new List<Animation>(await _animationManager.GetAnimationsAsync());
 
         // The current playing animation.
-        _selectedAnimation = _ledstripService.GetAnimationPlayingOnLedstripOrDefault(Device, Ledstrip);
+        _selectedAnimation = _ledstripService.GetAnimationPlayingOnLedstripOrDefault(Ledstrip);
 
         await base.OnParametersSetAsync();
     }
@@ -181,7 +181,7 @@
     /// <returns></returns>
     protected virtual bool IsLedstripBusy()
     {
-        return _ledstripService.IsLedstripBusy(Device, Ledstrip);
+        return _ledstripService.IsLedstripBusy(Ledstrip);
     }
 
 
@@ -202,12 +202,19 @@
         try
         {
 
-            await _ledstripService.StartAnimationOnLedstripAsync(Device, Ledstrip, _selectedAnimation!);
+            await _ledstripService.StartAnimationOnLedstripAsync(Ledstrip, _selectedAnimation!);
 
+        }
+        catch (EffectEngineException effectEngineException)
+        {
+            _logger.LogError(effectEngineException, $"Unable to start animation on ledstrip.");
+            _snackbar.AddError($"Unable to start animation see logs.");
         }
         catch (DeviceException e)
         {
             // Handle device not connected.
+            _logger.LogError(e, $"The device is not connected.");
+            _snackbar.AddError($"The device is not connected.");
         }
 
     }
@@ -217,7 +224,7 @@
 
     protected virtual async Task StopLedstripAsync()
     {
-        await _ledstripService.StopLedstripAsync(Device, Ledstrip);
+        await _ledstripService.StopLedstripAsync( Ledstrip);
 
     }
 
@@ -226,7 +233,7 @@
     {
         PixelColor color = ConvertToPixelColor(_selectedColor);
 
-        await _ledstripService.SetSolidColorAsync(Device, Ledstrip, color);
+        await _ledstripService.SetSolidColorAsync( Ledstrip, color);
 
         ClosePickColorDialog();
     }

@@ -1,5 +1,6 @@
 ﻿using Borealis.Domain.Animations;
 using Borealis.Domain.Effects;
+using Borealis.Domain.Runtime;
 using Borealis.Portal.Data.Converters;
 using Borealis.Portal.Domain.Configuration;
 using Borealis.Portal.Domain.Devices;
@@ -68,7 +69,9 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Effect>(effect =>
         {
             effect.ToTable("Effects");
+
             effect.HasKey(p => p.Id);
+            effect.Ignore(p => p.JavascriptModules);
 
             // Effect Parameters
             effect.OwnsMany(p => p.EffectParameters,
@@ -105,6 +108,8 @@ public class ApplicationDbContext : DbContext
                                   ae.ToTable("AnimationEffects");
                                   ae.HasKey(p => p.Id);
 
+                                  ae.Ignore(p => p.JavascriptModules);
+
                                   // Effect Parameters
                                   ae.OwnsMany(p => p.EffectParameters,
                                               ef =>
@@ -115,6 +120,12 @@ public class ApplicationDbContext : DbContext
                                                   ef.Property(p => p.Value).HasConversion<EffectParameterValueConverter>();
                                               });
                               });
+        });
+
+        modelBuilder.Entity<JavascriptModule>(module =>
+        {
+            module.ToTable("JavascriptModules");
+            module.HasKey(p => p.Id);
         });
 
         base.OnModelCreating(modelBuilder);

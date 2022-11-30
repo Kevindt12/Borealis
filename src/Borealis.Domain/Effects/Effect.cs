@@ -1,4 +1,8 @@
-﻿namespace Borealis.Domain.Effects;
+﻿using Borealis.Domain.Runtime;
+
+
+
+namespace Borealis.Domain.Effects;
 
 
 public class Effect : IEquatable<Effect>
@@ -27,7 +31,13 @@ public class Effect : IEquatable<Effect>
     /// <summary>
     /// The effect parameters.
     /// </summary>
-    public IList<EffectParameter> EffectParameters { get; set; } = new List<EffectParameter>();
+    public virtual IList<EffectParameter> EffectParameters { get; set; } = new List<EffectParameter>();
+
+
+    /// <summary>
+    /// The Javascript modules that can be used in the javascript engine.
+    /// </summary>
+    public virtual ICollection<JavascriptModule> JavascriptModules { get; set; } = new List<JavascriptModule>();
 
 
     public Effect() { }

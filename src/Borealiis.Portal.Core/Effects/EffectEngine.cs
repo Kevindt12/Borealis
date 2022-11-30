@@ -23,7 +23,6 @@ public class EffectEngine : IDisposable
 
     private Engine _engine = null!;
 
-
     /// <summary>
     /// The effect we want to run.
     /// </summary>
@@ -41,14 +40,17 @@ public class EffectEngine : IDisposable
     public int LedstripLength { get; }
 
 
-    internal EffectEngine(ILogger<EffectEngine> logger, Effect effect, Int32 ledstripLength, EffectEngineOptions? options = null)
+    /// <summary>
+    /// The effect engine that handles talking to the underlying runtime.
+    /// </summary>
+    internal EffectEngine(ILogger<EffectEngine> logger, Effect effect, Int32 ledstripLength, EffectEngineOptions options)
     {
         _logger = logger;
 
         // Object setup.
         Effect = effect;
         LedstripLength = ledstripLength;
-        Options = options ?? new EffectEngineOptions();
+        Options = options;
 
         // Starting the engine.
         ValidateEffect(effect);
@@ -69,10 +71,10 @@ public class EffectEngine : IDisposable
         _engine = new Engine(options =>
         {
             // Limit memory allocations to MB
-            options.LimitMemory(128_000_000);
+            options.LimitMemory(Options.MemoryLimit);
 
             // Set a timeout to 5 seconds.
-            options.TimeoutInterval(TimeSpan.FromSeconds(30));
+            options.TimeoutInterval(Options.TimeoutInterval);
         });
     }
 
@@ -117,7 +119,7 @@ public class EffectEngine : IDisposable
             }
             catch (JintException e)
             {
-                throw new EffectEngineException(module.Code, Effect, $"A modules {module.Id} was not able to be loaded.");
+                throw new EffectEngineRuntimeException(module.Code, Effect, $"A modules {module.Id} was not able to be loaded.");
             }
         }
     }
@@ -178,7 +180,7 @@ public class EffectEngine : IDisposable
         {
             _logger.LogTrace(e, "Javascript was unable to be loaded.");
 
-            throw new EffectEngineException(Effect.Javascript, Effect, "Unable to run the javascript of the effect.", e);
+            throw new EffectEngineRuntimeException(Effect, "Unable to run the javascript of the effect.", e);
         }
     }
 
@@ -187,13 +189,32 @@ public class EffectEngine : IDisposable
     /// Runs the setup function in the javascript.
     /// </summary>
     /// <returns> </returns>
-    public async Task RunSetupAsync(CancellationToken token = default)
+    public virtual async Task RunSetupAsync(CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
 
-        // Get the function delegate and run it.
-        _logger.LogTrace($"Running the invoke method on the javascript for effect {Effect.Id}.");
-        _engine.Invoke(SetupFunctionName);
+        try
+        {
+            // Running both methods to first of all check that they are working and to make sure that we have run at least a single loop.
+            _logger.LogTrace($"Running the invoke methods in the javascript for effect {Effect.Id}.");
+
+            // TODO: Big change this will of cause throw a AggregateException
+            await Task.Run(() =>
+                           {
+                               // The two methods that we want to run and test.
+                               _engine.Invoke(SetupFunctionName);
+                               _engine.Invoke(LoopFunctionName);
+                           },
+                           token)
+                      .ConfigureAwait(false);
+        }
+        catch (JintException e)
+        {
+            _logger.LogTrace(e, "Error while running the setup for the effect engine.");
+
+            // Rethrow the exception wrapped.
+            throw new EffectEngineRuntimeException(Effect, "Error while running the setup for the effect engine.", e);
+        }
     }
 
 
@@ -201,14 +222,22 @@ public class EffectEngine : IDisposable
     /// Runs the loop function in the javascript.
     /// </summary>
     /// <returns> A <see cref="ReadOnlyMemory{PixelColor}" /> of the colors that we should display on the ledstrip. </returns>
-    public async ValueTask<ReadOnlyMemory<PixelColor>> RunLoopAsync()
+    public virtual ValueTask<ReadOnlyMemory<PixelColor>> RunLoopAsync()
     {
-        // Get the function delegate and run it.
-        _engine.Invoke(LoopFunctionName);
+        try
+        {
+            // Running the function.
+            _engine.Invoke(LoopFunctionName);
 
-        PixelColor[] colors = ((object[])_engine.GetValue(PixelsName).ToObject()).Cast<PixelColor>().ToArray();
+            // Getting the pixel array wrapping it in a memory and sending it back as a read only.
+            ReadOnlyMemory<PixelColor> colors = new ReadOnlyMemory<PixelColor>(_engine.GetValue(PixelsName).AsArray().AsInstance<PixelColor[]>());
 
-        return colors;
+            return ValueTask.FromResult(colors);
+        }
+        catch (JintException e)
+        {
+            throw new EffectEngineRuntimeException(Effect, "Error running Loop() function in the javascript.", e);
+        }
     }
 
 
@@ -221,15 +250,15 @@ public class EffectEngine : IDisposable
     /// </remarks>
     /// <param name="effect"> The effect we want to validate. </param>
     /// <exception cref="ArgumentNullException"> If the Javascript is empty. </exception>
-    /// <exception cref="EffectException"> When the Javascript is not valid. </exception>
+    /// <exception cref="EffectEngineException"> When the Javascript is not valid. </exception>
     protected virtual void ValidateEffect(Effect effect)
     {
         // Making sure that its not empty.
         if (String.IsNullOrEmpty(effect.Javascript)) throw new ArgumentNullException(nameof(effect.Javascript), "The javascript cannot be empty to run it.");
 
         // Validating that we have both methods registered.
-        if (!effect.Javascript.Contains(LoopFunctionName, StringComparison.InvariantCultureIgnoreCase)) throw new EffectException("The loop method is not defined in script.");
-        if (!effect.Javascript.Contains(SetupFunctionName, StringComparison.InvariantCultureIgnoreCase)) throw new EffectException("The setup method is not defined in script.");
+        if (!effect.Javascript.Contains(LoopFunctionName, StringComparison.InvariantCultureIgnoreCase)) throw new EffectEngineException("The loop method is not defined in script.");
+        if (!effect.Javascript.Contains(SetupFunctionName, StringComparison.InvariantCultureIgnoreCase)) throw new EffectEngineException("The setup method is not defined in script.");
     }
 
 
@@ -241,10 +270,15 @@ public class EffectEngine : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
+        // Checking if we have disposed.
         if (_disposed) return;
 
+        // Disposing.
         Dispose(true);
         GC.SuppressFinalize(this);
+
+        // Setting flag.
+        _disposed = true;
     }
 
 
@@ -252,6 +286,7 @@ public class EffectEngine : IDisposable
     {
         if (disposing) { }
 
+        // Cleaning the engine by setting it to null so the GC can come collect it.
         _engine = null!;
     }
 

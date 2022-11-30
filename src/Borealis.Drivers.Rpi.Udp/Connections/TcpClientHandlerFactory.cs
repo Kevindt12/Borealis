@@ -25,8 +25,8 @@ public class TcpClientHandlerFactory
     /// </summary>
     /// <param name="client"> </param>
     /// <returns> </returns>
-    public TcpClientHandler CreateHandler(TcpClient client)
+    public TcpClientConnection CreateHandler(TcpClient client)
     {
-        return new TcpClientHandler(_loggerFactory.CreateLogger<TcpClientHandler>(), client);
+        return new TcpClientConnection(_loggerFactory.CreateLogger<TcpClientConnection>(), client);
     }
 }

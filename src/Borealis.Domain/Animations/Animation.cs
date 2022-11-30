@@ -18,10 +18,12 @@ public class Animation : IEquatable<Animation>
     /// </summary>
     public TimeSpan TimeSpan { get; set; }
 
+    // HACK: Database Not Null constraint  error for frequency.  This should of cause get a input field
+
     /// <summary>
     /// The frequency in hertz.
     /// </summary>
-    public int Frequency { get; set; }
+    public int Frequency { get; set; } = 10;
 
     /// <summary>
     /// The effect of the animation.

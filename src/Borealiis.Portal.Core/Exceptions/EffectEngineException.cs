@@ -9,8 +9,6 @@ public class EffectEngineException : ApplicationException
 {
     public Effect Effect { get; set; }
 
-    public string Code { get; set; }
-
 
     public EffectEngineException() { }
 
@@ -39,29 +37,5 @@ public class EffectEngineException : ApplicationException
     public EffectEngineException(Effect effect, String? message, Exception? innerException) : base(message, innerException)
     {
         Effect = effect;
-    }
-
-
-    /// <inheritdoc />
-    public EffectEngineException(String code, Effect effect)
-    {
-        Effect = effect;
-        Code = code;
-    }
-
-
-    /// <inheritdoc />
-    public EffectEngineException(String code, Effect effect, String? message) : base(message)
-    {
-        Effect = effect;
-        Code = code;
-    }
-
-
-    /// <inheritdoc />
-    public EffectEngineException(String code, Effect effect, String? message, Exception? innerException) : base(message, innerException)
-    {
-        Effect = effect;
-        Code = code;
     }
 }

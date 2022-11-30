@@ -48,9 +48,14 @@
 
 	public bool Connected => _deviceService.IsDeviceConnected(Device);
 
-	
+	/// <summary>
+	/// The JSON device page.
+	/// </summary>
 	public string Json { get; set; }
 
+	/// <summary>
+	/// Json is valid or not.
+	/// </summary>
 	public bool JsonValid { get; set; }
 
 

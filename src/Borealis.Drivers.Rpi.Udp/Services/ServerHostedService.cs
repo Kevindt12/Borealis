@@ -21,10 +21,12 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
     private readonly LedstripContext _ledstripContext;
 
-    private UdpServer _udpServer;
+    private UdpServer _udpServer = default!;
     private readonly TcpListener _tcpServer;
 
-    private TcpClientHandler _currentTcpClientHandler;
+    private TcpClientConnection? _currentTcpClientConnection;
+
+    private CancellationTokenSource _stoppingToken;
 
 
     public ServerHostedService(ILogger<ServerHostedService> logger,
@@ -73,7 +75,7 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
 
             // starting the server.
             await _udpServer.StartAsync(token);
-            _logger.LogInformation("Serer has started.");
+            _logger.LogInformation("Server has started.");
         }
         catch (InvalidOperationException invalidOperationException)
         {
@@ -92,30 +94,64 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
     }
 
 
-    protected virtual async Task StartWaitingForConnection(CancellationToken token)
+    protected virtual async Task StartWaitingForConnection(CancellationToken stoppingToken)
     {
         // Getting the client that once to connect.
         _logger.LogDebug($"Starting to listen on : {_tcpServer.LocalEndpoint}.");
-        TcpClient client = await _tcpServer.AcceptTcpClientAsync(token).ConfigureAwait(false);
-        _logger.LogDebug($"Client connection from : {client.Client.RemoteEndPoint}.");
 
-        // Handling the current incoming connection.
-        TcpClientHandler handler = _tcpClientHandlerFactory.CreateHandler(client);
-        _currentTcpClientHandler = handler;
+        // Loop until we want to cancel.
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            TcpClient client = await _tcpServer.AcceptTcpClientAsync(stoppingToken).ConfigureAwait(false);
+            _logger.LogDebug($"Client connection from : {client.Client.RemoteEndPoint}.");
 
-        handler.FrameReceived += HandlerOnFrameReceived;
-        handler.Disconnect += OnServerDisconnection;
-        handler.ConfigurationReceived += OnConfigurationReceived;
+            await SetNewConnectionAsync(client, stoppingToken);
+        }
     }
 
 
     protected virtual async Task StartTcpServer(CancellationToken token)
     {
         // Starting the tcp server.
+        _logger.LogInformation("Starting TCP Server on {endpoint}. ", _tcpServer.LocalEndpoint);
         _tcpServer.Start();
 
         // Not looping we only want to have a single connection.
-        _ = await Task.Factory.StartNew(async () => await StartWaitingForConnection(token), token).ConfigureAwait(false);
+        _logger.LogInformation("TCP Server started. Listening for a client.");
+        _stoppingToken = new CancellationTokenSource();
+        _ = Task.Run(async () => await StartWaitingForConnection(_stoppingToken.Token), token);
+    }
+
+
+    private async Task SetNewConnectionAsync(TcpClient client, CancellationToken token = default)
+    {
+        // Checking if the client is already the one connected.
+        if (_currentTcpClientConnection?.RemoteEndPoint == client.Client.RemoteEndPoint)
+        {
+            _logger.LogWarning("Received a new connection request from a server that is already connected.");
+
+            return;
+        }
+
+        _logger.LogDebug("New connection {client} has connected.", client);
+
+        // Checking if we already have a existing connection.
+        if (_currentTcpClientConnection != null)
+        {
+            _logger.LogDebug("Disposing of connection with {endpoint}.", _currentTcpClientConnection.RemoteEndPoint);
+            await _currentTcpClientConnection.DisposeAsync();
+            _currentTcpClientConnection = null;
+        }
+
+        // Handling the current incoming connection.
+        _logger.LogDebug("Creating the handler for the connection.");
+        TcpClientConnection connection = _tcpClientHandlerFactory.CreateHandler(client);
+        _currentTcpClientConnection = connection;
+        _logger.LogDebug("Connection has been established.");
+
+        connection.FrameReceived += HandlerOnFrameReceived;
+        connection.Disconnect += OnServerDisconnection;
+        connection.ConfigurationReceived += OnConfigurationReceived;
     }
 
 
@@ -139,13 +175,10 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
         _logger.LogInformation("Disconnection request came in. Clearing all ledstrips.");
         _ledstripContext.ClearAllLedstrips();
 
-        // Disposing of the handler.
-        _logger.LogDebug("Disposing the tcp client handler.");
-        await _currentTcpClientHandler.DisposeAsync();
-        _currentTcpClientHandler = null;
-
-        // Starting the listener to wait for a connection again.
-        await StartWaitingForConnection(CancellationToken.None);
+        // Disposing of the connection.
+        _logger.LogDebug("Disposing the tcp client connection.");
+        await _currentTcpClientConnection!.DisposeAsync();
+        _currentTcpClientConnection = null;
     }
 
 
@@ -154,6 +187,9 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
     {
         try
         {
+            _logger.LogInformation("Stopping TCP Server");
+            _stoppingToken?.Cancel();
+
             _logger.LogInformation("Stopping the UDP Server.");
             await _udpServer.StopAsync(cancellationToken);
         }
@@ -180,6 +216,7 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
     /// <inheritdoc />
     public void Dispose()
     {
+        _stoppingToken?.Dispose();
         _udpServer?.Dispose();
     }
 

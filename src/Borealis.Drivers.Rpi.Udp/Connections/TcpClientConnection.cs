@@ -9,9 +9,9 @@ using Borealis.Domain.Communication.Messages;
 namespace Borealis.Drivers.Rpi.Udp.Connections;
 
 
-public class TcpClientHandler : IDisposable, IAsyncDisposable
+public class TcpClientConnection : IDisposable, IAsyncDisposable
 {
-    private readonly ILogger<TcpClientHandler> _logger;
+    private readonly ILogger<TcpClientConnection> _logger;
     private readonly TcpClient _client;
     private readonly NetworkStream _stream;
 
@@ -39,12 +39,19 @@ public class TcpClientHandler : IDisposable, IAsyncDisposable
     /// </summary>
     public event EventHandler<ConfigurationMessage>? ConfigurationReceived;
 
+    /// <summary>
+    /// The remote endpoint of the server we are now connected with.
+    /// </summary>
+    public virtual EndPoint RemoteEndPoint { get; init; }
 
-    public TcpClientHandler(ILogger<TcpClientHandler> logger, TcpClient client)
+
+    public TcpClientConnection(ILogger<TcpClientConnection> logger, TcpClient client)
     {
         _logger = logger;
         _stream = client.GetStream();
         _client = client;
+
+        RemoteEndPoint = client.Client.RemoteEndPoint!;
 
         // Starting the listening task.\
         _stoppingToken = new CancellationTokenSource();
@@ -203,6 +210,8 @@ public class TcpClientHandler : IDisposable, IAsyncDisposable
 
         Dispose(true);
         GC.SuppressFinalize(this);
+
+        _disposed = true;
     }
 
 
@@ -212,7 +221,6 @@ public class TcpClientHandler : IDisposable, IAsyncDisposable
         {
             if (_client.Connected)
             {
-                _stream?.Dispose();
                 _client.Dispose();
             }
         }
@@ -228,6 +236,8 @@ public class TcpClientHandler : IDisposable, IAsyncDisposable
 
         Dispose(false);
         GC.SuppressFinalize(this);
+
+        _disposed = true;
     }
 
 
@@ -235,8 +245,18 @@ public class TcpClientHandler : IDisposable, IAsyncDisposable
     {
         if (_stream.Socket.Connected)
         {
-            await _stream.DisposeAsync().ConfigureAwait(false);
-            _client.Dispose();
+            try
+            {
+                await _client.Client.DisconnectAsync(true);
+            }
+            catch (Exception)
+            {
+                // Ignore don't really care if it does not work.
+            }
+            finally
+            {
+                _client.Dispose();
+            }
         }
     }
 }

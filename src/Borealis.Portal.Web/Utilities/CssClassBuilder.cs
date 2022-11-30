@@ -5,31 +5,30 @@
 namespace Borealis.Portal.Web.Utilities;
 
 
-public class CssBuilder
+public class CssClassBuilder
 {
     private readonly StringBuilder _sb;
 
 
-    public CssBuilder()
+    public CssClassBuilder()
     {
         _sb = new StringBuilder();
     }
 
 
-    public CssBuilder(string @class)
+    public CssClassBuilder(string @class)
     {
         _sb = new StringBuilder(@class);
     }
 
 
-    public CssBuilder AddStyle(string property, string? value, bool enableFlag)
+    public CssClassBuilder AddClass(string @class, bool enableFlag = true)
     {
-        if (!enableFlag) return this;
-
-        _sb.Append(property);
-        _sb.Append(':');
-        _sb.Append(value);
-        _sb.Append("; ");
+        if (enableFlag)
+        {
+            _sb.Append(@class);
+            _sb.Append(' ');
+        }
 
         return this;
     }

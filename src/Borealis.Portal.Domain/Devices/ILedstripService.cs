@@ -9,16 +9,16 @@ namespace Borealis.Portal.Domain.Devices;
 
 public interface ILedstripService
 {
-    bool IsLedstripBusy(Device device, Ledstrip ledstrip);
+    bool IsLedstripBusy(Ledstrip ledstrip);
 
 
-    Task StartAnimationOnLedstripAsync(Device device, Ledstrip ledstrip, Animation animation);
+    Task StartAnimationOnLedstripAsync(Ledstrip ledstrip, Animation animation);
 
-    Task StopLedstripAsync(Device device, Ledstrip ledstrip);
+    Task StopLedstripAsync(Ledstrip ledstrip);
 
-    Task TestLedstripAsync(Device device, Ledstrip ledstrip);
+    Task TestLedstripAsync(Ledstrip ledstrip);
 
-    Task SetSolidColorAsync(Device device, Ledstrip ledstrip, PixelColor color, CancellationToken token = default);
+    Task SetSolidColorAsync(Ledstrip ledstrip, PixelColor color, CancellationToken token = default);
 
-    Animation? GetAnimationPlayingOnLedstripOrDefault(Device device, Ledstrip ledstrip);
+    Animation? GetAnimationPlayingOnLedstripOrDefault(Ledstrip ledstrip);
 }

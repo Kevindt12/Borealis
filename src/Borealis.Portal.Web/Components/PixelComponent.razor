@@ -1,0 +1,28 @@
+﻿@using Borealis.Domain.Effects
+
+
+
+<div class="@Class" style="@($"height:{Height}px; width: {Width}px; background-color: rgb({PixelColor.R}, {PixelColor.G}, {PixelColor.B});")"></div>
+
+
+
+
+@code {
+
+    [Parameter]
+    public string Class { get; set; } = string.Empty;
+
+    [Parameter]
+    public int Width { get; set; }
+
+    [Parameter]
+    public int Height { get; set; }
+
+    [Parameter]
+    public PixelColor PixelColor
+    {
+        get; 
+        set;
+    }
+
+}

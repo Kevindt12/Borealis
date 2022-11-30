@@ -5,14 +5,11 @@
 namespace Borealis.Domain.Animations;
 
 
+/// <summary>
+/// This is a copy of a effect.
+/// </summary>
 public class AnimationEffect : Effect
 {
-    /// <summary>
-    /// The frequency of the animation that we want to play.
-    /// </summary>
-    public int Frequency { get; set; }
-
-
     /// <summary>
     /// The effect that is attached toa animation.
     /// </summary>

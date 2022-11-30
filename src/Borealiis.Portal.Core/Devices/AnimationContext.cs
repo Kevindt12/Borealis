@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Linq;
 
-using Borealis.Portal.Core.Animations;
-using Borealis.Portal.Core.Interaction;
-using Borealis.Portal.Domain.Devices;
+using Borealis.Portal.Domain.Animations;
+using Borealis.Portal.Domain.Connections;
 
 using Microsoft.Extensions.Logging;
 
@@ -12,46 +11,97 @@ using Microsoft.Extensions.Logging;
 namespace Borealis.Portal.Core.Devices;
 
 
-internal class LedstripContext : IDisposable
+internal class AnimationContext : IDisposable, IAsyncDisposable
 {
-    private readonly ILogger<LedstripContext> _logger;
+    private readonly ILogger<AnimationContext> _logger;
 
-    private readonly List<LedstripInteractorBase> _players;
-
-
-    public IReadOnlyList<LedstripInteractorBase> Interactors => _players.AsReadOnly();
+    private readonly List<IAnimationPlayer> _players;
 
 
-    public LedstripContext(ILogger<LedstripContext> logger)
+    public IReadOnlyList<IAnimationPlayer> Players => _players.AsReadOnly();
+
+
+    public AnimationContext(ILogger<AnimationContext> logger)
     {
         _logger = logger;
-        _players = new List<LedstripInteractorBase>();
+        _players = new List<IAnimationPlayer>();
     }
 
 
-    public IEnumerable<LedstripInteractorBase> GetInteractorsFromDevice(Device device)
+    public virtual IAnimationPlayer? GetAnimationPlayerForLedstripOrDefault(ILedstripConnection ledstrip)
     {
-        return _players.Where(p => p.Device == device);
+        return _players.SingleOrDefault(x => x.Ledstrip == ledstrip);
     }
 
 
-    public async Task AddInteractorAndStartAsync(LedstripInteractorBase player)
+    public virtual async Task RemoveAllAnimationPlayersFromDevice(IDeviceConnection deviceConnection)
+    {
+        IEnumerable<IAnimationPlayer> toBeRemoved = _players.Where(x => deviceConnection.LedstripConnections.Contains(x.Ledstrip)).ToList();
+
+        foreach (IAnimationPlayer player in toBeRemoved)
+        {
+            _logger.LogTrace($"Stopping animation player {player.Ledstrip.Ledstrip.Name}, {player.Ledstrip.Ledstrip.Name}.");
+            await RemoveAnimationPlayerAsync(player);
+        }
+    }
+
+
+    public async Task AddAnimationPlayerAsync(IAnimationPlayer player)
     {
         await player.StartAsync();
         _players.Add(player);
     }
 
 
-    public async Task RemoveAndStopInteractorAsync(LedstripInteractorBase player)
+    public async Task RemoveAnimationPlayerAsync(IAnimationPlayer player)
     {
         await player.DisposeAsync();
         _players.Remove(player);
     }
 
 
+    private bool _disposed;
+
+
     /// <inheritdoc />
     public void Dispose()
     {
-        foreach (AnimationPlayer animationPlayer in _players) { }
+        if (!_disposed) return;
+
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            foreach (IAnimationPlayer player in _players)
+            {
+                player.Dispose();
+            }
+        }
+    }
+
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        if (!_disposed) return;
+
+        await DisposeAsyncCore();
+
+        Dispose(false);
+        GC.SuppressFinalize(this);
+    }
+
+
+    protected virtual async ValueTask DisposeAsyncCore()
+    {
+        foreach (IAnimationPlayer player in _players)
+        {
+            await player.DisposeAsync();
+        }
     }
 }

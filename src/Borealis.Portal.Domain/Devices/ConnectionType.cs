@@ -6,14 +6,9 @@
 /// </summary>
 public enum ConnectionType
 {
-    /// <summary>
-    /// A Grpc connection.
-    /// </summary>
-    Grpc = 0,
-
     // A Udp connection.
-    Udp = 1,
+    TcpUdp = 0,
 
     // A Tcp connection
-    Tcp = 2
+    TcpOnly = 1
 }

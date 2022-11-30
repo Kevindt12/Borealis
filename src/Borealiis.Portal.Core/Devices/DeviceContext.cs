@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-using Borealis.Portal.Infrastructure.Connections;
+using Borealis.Portal.Domain.Connections;
 
 
 
@@ -14,6 +14,9 @@ public class DeviceContext : IDisposable
 
 
     public IReadOnlyList<IDeviceConnection> Connections => _connections;
+
+
+    public IReadOnlyList<ILedstripConnection> LedstripConnections => _connections.SelectMany(x => x.LedstripConnections).ToList();
 
 
     public DeviceContext()

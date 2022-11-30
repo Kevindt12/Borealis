@@ -1,17 +1,12 @@
 ﻿using System;
-using System.Drawing;
 using System.Linq;
 
 using Borealis.Domain.Animations;
-using Borealis.Domain.Devices;
 using Borealis.Domain.Effects;
+using Borealis.Portal.Core.Effects;
 using Borealis.Portal.Core.Exceptions;
-using Borealis.Portal.Core.Interaction;
-using Borealis.Portal.Infrastructure.Connections;
-
-using Jint;
-using Jint.Native;
-using Jint.Runtime.Interop;
+using Borealis.Portal.Domain.Animations;
+using Borealis.Portal.Domain.Connections;
 
 using Microsoft.Extensions.Logging;
 
@@ -20,93 +15,47 @@ using Microsoft.Extensions.Logging;
 namespace Borealis.Portal.Core.Animations;
 
 
-internal class AnimationPlayer : LedstripInteractorBase
+internal class AnimationPlayer : IAnimationPlayer
 {
     private readonly ILogger<AnimationPlayer> _logger;
-
-    private readonly Engine _engine;
 
     private Task? _task;
     private CancellationTokenSource? _stoppingToken;
 
-    public bool IsPlaying => _task != null;
+    private EffectEngine _effectEngine;
 
 
-    public Animation Animation { get; }
+    public virtual Animation Animation { get; }
+
+    /// <inheritdoc />
+    public virtual ILedstripConnection Ledstrip { get; }
+
+    /// <inheritdoc />
+    public virtual Boolean IsRunning => _task != null && _stoppingToken != null;
 
 
-    public AnimationPlayer(ILogger<AnimationPlayer> logger, Animation animation, IDeviceConnection deviceConnection, Ledstrip ledstrip) : base(logger, deviceConnection, ledstrip)
+    public AnimationPlayer(ILogger<AnimationPlayer> logger, Animation animation, EffectEngine engine, ILedstripConnection ledstrip)
     {
         _logger = logger;
         Animation = animation;
+        Ledstrip = ledstrip;
 
-        _engine = CreateJavascriptEngine();
-
-        LoadJavascriptEnvironment();
-        LoadJavascript(animation.Effect.Javascript);
-    }
-
-
-    private Engine CreateJavascriptEngine()
-    {
-        return new Engine();
-    }
-
-
-    /// <inheritdoc />
-    protected override async Task OnStartAsync(CancellationToken token)
-    {
-        _logger.LogDebug($"Starting animation on ledstrip {Ledstrip.Name}, animation {Animation.Name}");
-
-        // Loads all the enviroment variables in the javascript engine.
-        LoadJavascriptEnvironment();
-
-        try
-        {
-            LoadJavascript(Animation.Effect.Javascript);
-        }
-        catch (Exception e)
-        {
-            throw new AnimationException("There was a problem loading the javascript.", e);
-        }
-
-        await StartTaskAsync(token);
-    }
-
-
-    /// <summary>
-    /// Resumes playing the ledstrip.
-    /// </summary>
-    public async Task ResumeAsync(CancellationToken token = default)
-    {
-        _logger.LogDebug($"Resuming animation on ledstrip {Ledstrip.Name}, animation {Animation.Name}");
-        await StartTaskAsync(token);
-    }
-
-
-    /// <summary>
-    /// Stops playing on the ledstrips and blacks it out.
-    /// </summary>
-    public virtual async Task PauseAsync(CancellationToken token = default)
-    {
-        _logger.LogDebug($"Pausing animation on ledstrip {Ledstrip.Name}, animation {Animation.Name}");
-        await StopTaskAsync(token);
-
-        await SendColors(Enumerable.Repeat((PixelColor)Color.Black, Ledstrip.Length).ToArray());
+        _effectEngine = engine;
     }
 
 
     /// <summary>
     /// Starts the underlying task that starts the animation.
     /// </summary>
-    /// <param name="token"> </param>
+    /// <param name="token"> A token to cancel the current operation. </param>
     /// <returns> </returns>
     protected virtual async Task StartTaskAsync(CancellationToken token = default)
     {
         if (_task != null) throw new InvalidOperationException("Cannot start task on a task that is already start or still waiting to be ended.");
 
+        _logger.LogTrace($"Starting Looping task for {Animation.Id}.");
         _stoppingToken = new CancellationTokenSource();
-        _task = Task.Factory.StartNew(StartAnimationAsync, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        _task = await Task.Factory.StartNew(TaskStartAsync, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
     }
 
 
@@ -115,29 +64,50 @@ internal class AnimationPlayer : LedstripInteractorBase
     /// </summary>
     /// <param name="token"> </param>
     /// <returns> </returns>
-    protected virtual async Task StopTaskAsync(CancellationToken token = default)
+    public virtual async Task StopAsync(CancellationToken token = default)
     {
         if (_task == null) throw new InvalidOperationException("The animation has not been started and the task is not initialized.");
+
+        _logger.LogTrace($"Stopping animation player {Animation.Id}");
         _stoppingToken!.Cancel();
 
-        await _task;
-
-        _stoppingToken = null;
-        _task = null;
+        try
+        {
+            _logger.LogTrace("Stopping task and awaiting for it.");
+            await _task.ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error task in cleanup for animation player.");
+        }
+        finally
+        {
+            // Clean up the task.
+            _stoppingToken.Dispose();
+            _stoppingToken = null;
+            _task = null;
+        }
     }
 
 
-    private async Task StartAnimationAsync()
+    /// <inheritdoc />
+    public virtual async Task StartAsync(CancellationToken token = default)
     {
+        token.ThrowIfCancellationRequested();
+        _logger.LogTrace($"Starting animation player for animation {Animation.Id}.");
+
         try
         {
-            LoadAnimationParameters(Animation);
+            _logger.LogTrace($"Running setup of animation {Animation.Id}.");
+            await _effectEngine.RunSetupAsync(token).ConfigureAwait(false);
 
-            RunSetup();
-
-            await StartLoopAsync();
+            _logger.LogTrace("The start task ");
+            await StartTaskAsync(token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException operationCanceledException) { }
+        catch (OperationCanceledException operationCanceledException)
+        {
+            throw;
+        }
         catch (Exception e)
         {
             _logger.LogError(e, "There was a error with running the player thread.");
@@ -147,83 +117,73 @@ internal class AnimationPlayer : LedstripInteractorBase
     }
 
 
-    private void RunSetup()
+    private async Task TaskStartAsync()
     {
-        JsValue setupFunctionDelegate = _engine.GetValue("setup");
-
-        setupFunctionDelegate.Invoke();
-    }
-
-
-    private async Task StartLoopAsync()
-    {
-        JsValue loopFunction = _engine.GetValue("loop");
-
+        // Checking the stopping token if we need to stop.
         while (!_stoppingToken!.Token.IsCancellationRequested)
         {
-            // Invokes the function.
-            loopFunction.Invoke();
+            ReadOnlyMemory<PixelColor> colors = await _effectEngine.RunLoopAsync().ConfigureAwait(false);
 
-            // Now reading the colors form the colors array.
-            PixelColor[] colors = ((object[])_engine.GetValue("Pixels").ToObject()).Cast<PixelColor>().ToArray();
+            await Ledstrip.SendFrameAsync(colors);
 
-            await SendColors(colors);
-
-            await Task.Delay(Animation.Frequency / 1, _stoppingToken.Token);
+            await Task.Delay(1 / Animation.Frequency * 1000);
         }
     }
 
 
-    /// <summary>
-    /// Loads the javascript enviroment and
-    /// </summary>
-    private void LoadJavascriptEnvironment()
-    {
-        // Adding the color object.
-        _engine.SetValue("PixelColor", TypeReference.CreateTypeReference(_engine, typeof(PixelColor)));
-
-        // Setting the main color array thatw e need to set in the scripts.
-        _engine.SetValue("Pixels", new PixelColor[Ledstrip.Length]);
-    }
-
-
-    /// <summary>
-    /// Loads the javascript into the player.
-    /// </summary>
-    /// <param name="javascript"> </param>
-    /// <exception cref="InvalidOperationException"> </exception>
-    private void LoadJavascript(string javascript)
-    {
-        // Validating that we have both methods registered.
-        if (!javascript.Contains("loop", StringComparison.InvariantCultureIgnoreCase)) throw new InvalidOperationException("The loop method is not defined in script.");
-        if (!javascript.Contains("setup", StringComparison.InvariantCultureIgnoreCase)) throw new InvalidOperationException("The setup method is not defined in script.");
-
-        _engine.Execute(javascript);
-    }
-
-
-    private void LoadAnimationParameters(Animation animation)
-    {
-        foreach (EffectParameter parameter in animation.Effect.EffectParameters)
-        {
-            _engine.SetValue(parameter.Identifier, parameter.Value);
-        }
-    }
+    private bool _disposed;
 
 
     /// <inheritdoc />
-    protected override void Dispose(Boolean disposing)
+    public void Dispose()
+    {
+        if (!_disposed) return;
+
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+
+    protected virtual void Dispose(bool disposing)
     {
         if (disposing)
         {
             _stoppingToken!.Dispose();
             _stoppingToken?.Dispose();
             _task?.Dispose();
+            _effectEngine?.Dispose();
         }
 
         _stoppingToken = null;
         _task = null;
+        _effectEngine = null!;
+    }
 
-        base.Dispose(disposing);
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        if (!_disposed) return;
+
+        await DisposeAsyncCore();
+
+        Dispose(false);
+        GC.SuppressFinalize(this);
+    }
+
+
+    protected virtual async ValueTask DisposeAsyncCore()
+    {
+        if (_task != null)
+        {
+            try
+            {
+                await _task;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error cleaning up the animation player.");
+            }
+        }
     }
 }

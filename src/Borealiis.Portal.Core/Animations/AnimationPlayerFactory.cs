@@ -2,8 +2,9 @@
 using System.Linq;
 
 using Borealis.Domain.Animations;
-using Borealis.Domain.Devices;
-using Borealis.Portal.Infrastructure.Connections;
+using Borealis.Portal.Core.Effects;
+using Borealis.Portal.Domain.Animations;
+using Borealis.Portal.Domain.Connections;
 
 using Microsoft.Extensions.Logging;
 
@@ -12,27 +13,25 @@ using Microsoft.Extensions.Logging;
 namespace Borealis.Portal.Core.Animations;
 
 
-internal class AnimationPlayerFactory
+internal class AnimationPlayerFactory : IAnimationPlayerFactory
 {
     private readonly ILoggerFactory _loggerFactory;
+    private readonly EffectEngineFactory _effectEngineFactory;
 
 
-    public AnimationPlayerFactory(ILoggerFactory loggerFactory)
+    public AnimationPlayerFactory(ILoggerFactory loggerFactory, EffectEngineFactory effectEngineFactory)
     {
         _loggerFactory = loggerFactory;
+        _effectEngineFactory = effectEngineFactory;
     }
 
 
-    /// <summary>
-    /// Creates a new animation player to be used to play animations.
-    /// </summary>
-    /// <exception cref="InvalidOperationException"> If the javascript is not valid. </exception>
-    /// <param name="deviceConnection"> The connection to the device where would want to play the animation. </param>
-    /// <param name="animation"> The animation we want to play. </param>
-    /// <param name="ledstrip"> The ledstrip we want to play it on. </param>
-    /// <returns> A new animation player that can be used. </returns>
-    public AnimationPlayer CreateAnimationPlayer(IDeviceConnection deviceConnection, Animation animation, Ledstrip ledstrip)
+    /// <inheritdoc />
+    public IAnimationPlayer CreateAnimationPlayer(Animation animation, ILedstripConnection ledstrip)
     {
-        return new AnimationPlayer(_loggerFactory.CreateLogger<AnimationPlayer>(), animation, deviceConnection, ledstrip);
+        return new AnimationPlayer(_loggerFactory.CreateLogger<AnimationPlayer>(),
+                                   animation,
+                                   _effectEngineFactory.CreateEffectEngine(animation.Effect, ledstrip.Ledstrip.Length),
+                                   ledstrip);
     }
 }

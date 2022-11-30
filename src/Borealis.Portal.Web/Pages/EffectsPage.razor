@@ -5,6 +5,7 @@
 @using Borealis.Portal.Web.Components;
 @using System.Reflection.Metadata
 @using BlazorMonaco
+@using Borealis.Domain.Devices
 @using Borealis.Portal.Web.Extensions
 
 
@@ -30,7 +31,7 @@
 
 @* The action buttons. *@
 <MudStack Class="py-4" AlignItems="AlignItems.Start" Justify="Justify.SpaceBetween" Row="true">
-    
+
     @* The add button.*@
     <MudButton Class="pa-2"
                Size="Size.Small"
@@ -38,7 +39,7 @@
                StartIcon="@Icons.Material.Filled.Add"
                Color="Color.Primary"
                OnClick="OnAddEffect">Add</MudButton>
-               
+
     @* The Save button, *@
     <MudButton Class="pa-2"
                Size="Size.Small"
@@ -56,29 +57,29 @@
          Outlined="true"
          Border="true" AlwaysShowScrollButtons="false"
          Position="MudBlazor.Position.Left"
-         @bind-ActivePanelIndex="SelectedEffectIndex" >
+         @bind-ActivePanelIndex="SelectedEffectIndex">
 
     @foreach (Effect effect in Effects)
     {
-        <MudTabPanel Class="pa-2" Text="@effect.Name" >
+        <MudTabPanel Class="pa-2" Text="@effect.Name">
             <MudStack>
 
-                
+
                 @* Javascript editor *@
 
-                <MudPaper MinHeight="500" MaxHeight="800"  Elevation="2" >
-                    <MudText Class="px-4 py-2" Typo="@Typo.h5" Align="@Align.Left" >Editor</MudText>
-                    <MudDivider DividerType="@DividerType.Middle" FlexItem="@true"/>
-                    <CodeEditor Id="@effect.Id" @bind-Value="@effect.Javascript" Width="1000"/>
+                <MudPaper MinHeight="500" MaxHeight="800" Elevation="2">
+                    <MudText Class="px-4 py-2" Typo="@Typo.h5" Align="@Align.Left">Editor</MudText>
+                    <MudDivider DividerType="@DividerType.Middle" FlexItem="@true" />
+                    <CodeEditor Id="@effect.Id" @bind-Value="@effect.Javascript" Width="1000" />
                 </MudPaper>
 
-                <MudDivider DividerType="@DividerType.Inset"/>
+                <MudDivider DividerType="@DividerType.Inset" />
 
                 @* Javascript Parameters *@
-                <MudPaper Class="px-4 py-2" Elevation="2" >
-                    <MudText Class="px-4 py-2" Typo="@Typo.h5" Align="@Align.Left" >Parameters</MudText>
+                <MudPaper Class="px-4 py-2" Elevation="2">
+                    <MudText Class="px-4 py-2" Typo="@Typo.h5" Align="@Align.Left">Parameters</MudText>
 
-                    <MudStack Spacing="1"  >
+                    <MudStack Spacing="1">
                         @* All rows. *@
                         @for (int i = 0; i < effect.EffectParameters.Count; i++)
                         {
@@ -89,11 +90,25 @@
                         }
 
                         @* Empty new row. *@
-                        <EffectParameterRow Class="pa-1" DisableRemoveButton="@true" EffectParameter="@EffectParameter.New(EffectParameterType.Text)" EffectParameterChanged="@((p) => { OnEffectParameterAdded(p, effect);  })"/>
+                        <EffectParameterRow Class="pa-1" DisableRemoveButton="@true" EffectParameter="@EffectParameter.New(EffectParameterType.Text)" EffectParameterChanged="@((p) => { OnEffectParameterAdded(p, effect);  })" />
                     </MudStack>
 
                 </MudPaper>
-                
+
+                <MudDivider DividerType="@DividerType.Inset"/>
+
+                <MudPaper Class="px-4 py-2" Outlined="true">
+                    <MudText Class="px-4 py-2" Typo="@Typo.h5" Align="@Align.Left" >Testing</MudText>
+
+                    <MudStack Justify="Justify.SpaceAround" >
+
+
+                        <LedstripEmulator ColorSpectrum="ColorSpectrum.Rgb" Effect="effect" />
+
+                    </MudStack>
+                </MudPaper>
+
+
             </MudStack>
         </MudTabPanel>
     }
@@ -256,7 +271,7 @@
         StateHasChanged();
 
     }
-    
+
 
 
 

@@ -93,4 +93,11 @@ public struct PixelColor : IEquatable<PixelColor>
     {
         return !left.Equals(right);
     }
+
+
+    /// <inheritdoc />
+    public override String ToString()
+    {
+        return $"R:{R}G:{G}B:{B}";
+    }
 }

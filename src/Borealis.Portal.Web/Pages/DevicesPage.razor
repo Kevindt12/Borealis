@@ -180,8 +180,8 @@
                    Variant="Variant.Outlined"
                    FullWidth="true"
                    @bind-Value="_connectionType">
-            <MudSelectItem T="ConnectionType" Value="ConnectionType.Grpc">Grpc</MudSelectItem>
-            <MudSelectItem T="ConnectionType" Value="ConnectionType.Udp">Udp</MudSelectItem>
+            <MudSelectItem T="ConnectionType" Value="ConnectionType.TcpUdp">Udp + Tcp</MudSelectItem>
+            <MudSelectItem T="ConnectionType" Value="ConnectionType.TcpOnly">Tcp Only</MudSelectItem>
 
         </MudSelect>
 
@@ -298,7 +298,7 @@
         _deviceName = string.Empty;
         _ipAddress = String.Empty;
         _port = 0;
-        _connectionType = ConnectionType.Udp;
+        _connectionType = ConnectionType.TcpUdp;
     }
 
     /// <summary>
@@ -383,7 +383,7 @@
             _snackbar.AddInfo($"Disconnecting from {device.Name}");
 
             // Connect to the device.
-            await _deviceService.DisconnectToDeviceAsync(device);
+            await _deviceService.DisconnectFromDeviceAsync(device);
 
             StateHasChanged();
 

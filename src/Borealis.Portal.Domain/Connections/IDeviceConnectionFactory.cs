@@ -1,8 +1,11 @@
-﻿using Borealis.Portal.Domain.Devices;
+﻿using System;
+using System.Linq;
+
+using Borealis.Portal.Domain.Devices;
 
 
 
-namespace Borealis.Portal.Infrastructure.Connections;
+namespace Borealis.Portal.Domain.Connections;
 
 
 /// <summary>

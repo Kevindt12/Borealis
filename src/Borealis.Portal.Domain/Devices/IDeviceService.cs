@@ -19,7 +19,7 @@ public interface IDeviceService
     /// </summary>
     /// <param name="device"> The device we want to connect to. </param>
     /// <param name="token"> A token to cancel the current operation. </param>
-    Task DisconnectToDeviceAsync(Device device, CancellationToken token = default);
+    Task DisconnectFromDeviceAsync(Device device, CancellationToken token = default);
 
 
     /// <summary>

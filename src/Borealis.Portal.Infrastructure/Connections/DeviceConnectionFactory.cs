@@ -1,5 +1,5 @@
-﻿using Borealis.Portal.Domain.Devices;
-using Borealis.Portal.Domain.Exceptions;
+﻿using Borealis.Portal.Domain.Connections;
+using Borealis.Portal.Domain.Devices;
 
 using Microsoft.Extensions.Logging;
 
@@ -25,55 +25,14 @@ internal class DeviceConnectionFactory : IDeviceConnectionFactory
     {
         return device.ConnectionType switch
         {
-            ConnectionType.Grpc => await CreateGrpcConnection(device, token),
-            ConnectionType.Udp  => await CreateUdpConnection(device, token),
-            _                   => throw new NotImplementedException("The connection type selected was not supported.")
+            ConnectionType.TcpUdp => await CreateCombinedConnection(device, token),
+            _                     => throw new NotImplementedException("The connection type selected was not supported.")
         };
     }
 
 
-    // TODO: Make sure that we catch the right excpetions. This is to broad.
-
-
-    protected virtual async Task<GrpcDeviceConnection> CreateGrpcConnection(Device device, CancellationToken token = default)
+    protected virtual async Task<CombinedDeviceConnection> CreateCombinedConnection(Device device, CancellationToken token = default)
     {
-        GrpcDeviceConnection connection = default!;
-
-        try
-        {
-            connection = await GrpcDeviceConnection.CreateAsync(_loggerFactory.CreateLogger<GrpcDeviceConnection>(), device);
-
-            return connection;
-        }
-        catch (Exception e)
-        {
-            // Making sure that we have disposed of the connection.
-            await connection.DisposeAsync();
-
-            throw new DeviceConnectionException("Unable to create a connection with device.", device);
-        }
-    }
-
-
-    protected virtual async Task<DeviceConnection> CreateUdpConnection(Device device, CancellationToken token = default)
-    {
-        DeviceConnection? connection = default;
-
-        try
-        {
-            connection = await DeviceConnection.CreateConnectionAsync(_loggerFactory.CreateLogger<DeviceConnection>(), device);
-
-            return connection;
-        }
-        catch (Exception e)
-        {
-            // Making sure that we have disposed to the connection.
-            if (connection != null)
-            {
-                await connection.DisposeAsync();
-            }
-
-            throw new DeviceConnectionException("Unable to create a connection with device.", device);
-        }
+        return await CombinedDeviceConnection.CreateConnectionAsync(_loggerFactory.CreateLogger<CombinedDeviceConnection>(), device, token);
     }
 }

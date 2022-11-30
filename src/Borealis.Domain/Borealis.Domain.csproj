@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Folder Include="Animations\" />
+    <Folder Include="Runtime\" />
   </ItemGroup>
 
   <ItemGroup>

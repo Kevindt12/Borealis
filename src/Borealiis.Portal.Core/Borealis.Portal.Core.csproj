@@ -20,6 +20,7 @@
   <ItemGroup>
     <PackageReference Include="Jint" Version="3.0.0-beta-2037" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+    <PackageReference Include="UnitsNet.nanoFramework.Frequency" Version="4.148.0" />
   </ItemGroup>
 
 </Project>

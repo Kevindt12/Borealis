@@ -11,6 +11,7 @@
     <PackageReference Include="MudBlazor" Version="6.0.18" />
     <PackageReference Include="NLog" Version="5.0.5" />
     <PackageReference Include="NLog.Extensions.Logging" Version="5.1.0" />
+    <PackageReference Include="UnitsNet.nanoFramework.Frequency" Version="4.148.0" />
   </ItemGroup>
 
   <ItemGroup>

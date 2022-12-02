@@ -126,7 +126,8 @@ internal class AnimationPlayer : IAnimationPlayer
 
             await Ledstrip.SendFrameAsync(colors);
 
-            await Task.Delay(1 / Animation.Frequency * 1000);
+            // HACK: should become PeriodicTimer
+            await Task.Delay((int)(1000 / Animation.Frequency.PerSecond));
         }
     }
 
@@ -141,6 +142,8 @@ internal class AnimationPlayer : IAnimationPlayer
 
         Dispose(true);
         GC.SuppressFinalize(this);
+
+        _disposed = true;
     }
 
 
@@ -169,6 +172,8 @@ internal class AnimationPlayer : IAnimationPlayer
 
         Dispose(false);
         GC.SuppressFinalize(this);
+
+        _disposed = true;
     }
 
 

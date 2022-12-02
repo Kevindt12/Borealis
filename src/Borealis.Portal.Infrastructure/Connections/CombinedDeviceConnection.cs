@@ -106,8 +106,9 @@ internal class CombinedDeviceConnection : DeviceConnectionBase
             }
             catch (OperationCanceledException e)
             {
-                // TODO: Add logging maybe inform the user.
-                return null;
+                _logger.LogTrace("Device connection timed out.");
+
+                throw new DeviceConnectionException("The device connection timed out.");
             }
         }
         catch (SocketException e)

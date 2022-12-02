@@ -101,6 +101,8 @@ public class ApplicationDbContext : DbContext
             animation.ToTable("Animations");
             animation.HasKey(p => p.Id);
 
+            animation.Property(p => p.Frequency).HasConversion<FrequencyTypeConverter>();
+
             // Effect
             animation.OwnsOne(p => p.Effect,
                               ae =>

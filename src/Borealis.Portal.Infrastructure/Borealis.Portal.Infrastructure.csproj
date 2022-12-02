@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.49.0" />
+    <PackageReference Include="UnitsNet.nanoFramework.Frequency" Version="4.148.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,130 @@
+﻿@using UnitsNet
+@using MudBlazor
+@using UnitsNet.Units
+
+<MudStack Row="true" Class="Class" Spacing="-1" AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
+
+    <MudNumericField T="double" @bind-Value="Value" Disabled="Disabled" ReadOnly="ReadOnly" MaxLength="MaxLength" Label="Label" AutoFocus="AutoFocus" FullWidth="FullWidth" HelperText="@HelperText" HelperTextOnFocus="HelperTextOnFocus" Variant="Variant" Placeholder="Placeholdercou" Counter="Counter"></MudNumericField>
+    <MudSelect T="FrequencyUnit" @bind-Value="Unit">
+        @foreach (FrequencyUnit unit in Enum.GetValuesAsUnderlyingType(typeof(FrequencyUnit)))
+        {
+            <MudSelectItem T="FrequencyUnit" Value="unit">@unit</MudSelectItem>
+        }
+    </MudSelect>
+</MudStack>
+
+
+
+@code {
+
+
+
+    /// <summary>
+    /// Class
+    /// </summary>
+    [Parameter]
+    public string Class { get; set; }
+
+    /// <summary>If true, the input element will be disabled.</summary>
+    [Parameter]
+    [Category("Behavior")]
+    public bool Disabled { get; set; }
+
+    /// <summary>If true, the input will be read-only.</summary>
+    [Parameter]
+    [Category("Behavior")]
+    public bool ReadOnly { get; set; }
+
+    /// <summary>
+    /// If true, the input will take up the full width of its container.
+    /// </summary>
+    [Parameter]
+    [Category("Appearance")]
+    public bool FullWidth { get; set; }
+
+    /// <summary>
+    /// The HelperText will be displayed below the text field.
+    /// </summary>
+    [Parameter]
+    [Category("Behavior")]
+    public string HelperText { get; set; }
+
+    /// <summary>
+    /// If true, the helper text will only be visible on focus.
+    /// </summary>
+    [Parameter]
+    [Category("Behavior")]
+    public bool HelperTextOnFocus { get; set; }
+
+
+
+
+    /// <summary>Variant to use.</summary>
+    [Parameter]
+    [Category("Appearance")]
+    public Variant Variant { get; set; }
+
+    /// <summary>Will adjust vertical spacing.</summary>
+    [Parameter]
+    [Category("Appearance")]
+    public Margin Margin { get; set; }
+
+    /// <summary>
+    /// The short hint displayed in the input before the user enters a value.
+    /// </summary>
+    [Parameter]
+    [Category("Behavior")]
+    public string Placeholder { get; set; }
+
+    /// <summary>
+    /// If set, will display the counter, value 0 will display current count but no stop count.
+    /// </summary>
+    [Parameter]
+    [Category("Validation")]
+    public int? Counter { get; set; }
+
+    /// <summary>
+    /// Maximum number of characters that the input will accept
+    /// </summary>
+    [Parameter]
+    [Category("Validation")]
+    public int MaxLength { get; set; } = 524288;
+
+    /// <summary>
+    /// If string has value the label text will be displayed in the input, and scaled down at the top if the input has value.
+    /// </summary>
+    [Parameter]
+    [Category("Behavior")]
+    public string Label { get; set; }
+
+    /// <summary>If true the input will focus automatically.</summary>
+    [Parameter]
+    [Category("Behavior")]
+    public bool AutoFocus { get; set; }
+
+
+
+    [Parameter]
+    public Frequency Frequency { get; set; }
+
+    [Parameter]
+    public EventCallback<Frequency> FrequencyChanged { get; set; }
+
+
+    public FrequencyUnit Unit { get; set; }
+
+
+    public double Value
+    {
+        get
+        {
+            return Frequency.As(Unit);
+        }
+        set
+        {
+            Frequency = Frequency.From(value, Unit);
+            FrequencyChanged.InvokeAsync(Frequency);
+        }
+    }
+
+}

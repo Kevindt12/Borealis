@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
+    <PackageReference Include="UnitsNet.nanoFramework.Frequency" Version="4.148.0" />
   </ItemGroup>
 
   <ItemGroup>

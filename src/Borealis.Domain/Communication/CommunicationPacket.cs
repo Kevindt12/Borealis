@@ -21,11 +21,10 @@ public readonly struct CommunicationPacket
     /// </summary>
     public ReadOnlyMemory<byte>? Payload { get; init; }
 
-    // TODO: Switch its inverted
     /// <summary>
     /// Indicating that the packet has a payload attached.
     /// </summary>
-    public bool IsEmpty => Payload != null;
+    public bool IsEmpty => Payload == null;
 
     /// <summary>
     /// A flag indicating that this packet is a acknowledgement packet.

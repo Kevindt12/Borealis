@@ -1,4 +1,8 @@
-﻿namespace Borealis.Domain.Animations;
+﻿using UnitsNet;
+
+
+
+namespace Borealis.Domain.Animations;
 
 
 public class Animation : IEquatable<Animation>
@@ -18,12 +22,10 @@ public class Animation : IEquatable<Animation>
     /// </summary>
     public TimeSpan TimeSpan { get; set; }
 
-    // HACK: Database Not Null constraint  error for frequency.  This should of cause get a input field
-
     /// <summary>
-    /// The frequency in hertz.
+    /// The frequency of this animation,
     /// </summary>
-    public int Frequency { get; set; } = 10;
+    public Frequency Frequency { get; set; }
 
     /// <summary>
     /// The effect of the animation.

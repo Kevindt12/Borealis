@@ -46,33 +46,35 @@
     @foreach (Animation animation in Animations)
     {
         <MudTabPanel Class="d-flex" Text="@animation.Name">
-            <MudPaper Elevation="2" Width="600" Height="700" Class="pa-2 d-flex d-block" MinHeight="700" MinWidth="1000">
+            <MudPaper  Elevation="2" Class="pa-2 d-flex d-block" MinHeight="600" MinWidth="1000" >
+                
+                <FrequencyField Class="pa-1" @bind-Frequency="@animation.Frequency" Label="Frequency"/>
 
-                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-1">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-1" >
                     @foreach (EffectParameter parameter in animation.Effect.EffectParameters)
                     {
-                        <MudText Class="pa-2" Align="Align.Left" Typo="Typo.body1">@parameter.Identifier</MudText>
-                        <MudText Class="pa-2" Align="Align.Left" Typo="Typo.body1">@parameter.Description</MudText>
-                        <MudText Class="pa-2" Align="Align.Left" Typo="Typo.body1">@parameter.ParameterType</MudText>
-                        <EffectParameterValueField Class="pa-2" @bind-Value="@parameter.Value" Margin="Margin.Normal" Label="Value" Variant="Variant.Outlined" ParameterType="@parameter.ParameterType" />
+                        <MudText Class="pa-2" Align="Align.Left" Typo="Typo.body1" >@parameter.Identifier</MudText>
+                        <MudText Class="pa-2" Align="Align.Left" Typo="Typo.body1" >@parameter.Description</MudText>
+                        <MudText Class="pa-2" Align="Align.Left" Typo="Typo.body1" >@parameter.ParameterType</MudText>
+                        <EffectParameterValueField Class="pa-2" @bind-Value="@parameter.Value" Margin="Margin.Normal" Label="Value" Variant="Variant.Outlined" ParameterType="@parameter.ParameterType"/>
                     }
                 </MudStack>
 
-                <MudStack Class="pa-1 object-right-bottom" Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                <MudStack Class="pa-1 object-right-bottom" Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" >
 
                     <MudButton Class="pa-2"
-                           Size="Size.Small"
-                           Color="Color.Primary"
-                           Variant="Variant.Filled"
-                           StartIcon="@Icons.Material.Filled.Save"
-                           OnClick="() => SaveAnimationAsync(animation)">Save</MudButton>
+                               Size="Size.Small"
+                               Color="Color.Primary"
+                               Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               OnClick="() => SaveAnimationAsync(animation)" >Save</MudButton>
 
                     <MudButton Class="pa-2"
-                           Size="Size.Small"
-                           Color="Color.Error"
-                           Variant="Variant.Filled"
-                           StartIcon="@Icons.Material.Filled.Delete"
-                           OnClick="() => DeleteAnimationAsync(animation)">Delete</MudButton>
+                               Size="Size.Small"
+                               Color="Color.Error"
+                               Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Delete"
+                               OnClick="() => DeleteAnimationAsync(animation)" >Delete</MudButton>
 
                 </MudStack>
             </MudPaper>

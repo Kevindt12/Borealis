@@ -13,7 +13,6 @@
 
 @*
     TODO: Exception throw when adding a new devices. A null reference exception.
-    TODO: When editing and saving it adds a other copy to the list of devices. Make sure when copying that we dont add stuff.
 
 *@
 
@@ -444,10 +443,7 @@
             _logger.LogDebug("Validated device input saving the device.");
             await _deviceManager.SaveDeviceAsync(device);
 
-            // HACK: Because we call state has changed Adding the device to the collection, might not be needed. Or maybe it loads again from the override OnParametersSetAsync
-            Devices.Add(device);
-
-            // Resetting the dialog.
+    // Resetting the dialog.
             ClearDialog();
             CloseDialog();
 

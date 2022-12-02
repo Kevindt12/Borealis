@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="UnitsNet.nanoFramework.Frequency" Version="4.148.0" />
+  </ItemGroup>
+
 </Project>

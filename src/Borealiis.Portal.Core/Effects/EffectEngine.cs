@@ -144,7 +144,7 @@ public class EffectEngine : IDisposable
         // The effect parameters.
         foreach (EffectParameter parameter in Effect.EffectParameters)
         {
-            _logger.LogDebug($"Loading parameter {parameter.Identifier} with value : {parameter.Value}.");
+            _logger.LogTrace($"Loading parameter {parameter.Identifier} with value : {parameter.Value}.");
             _engine.SetValue(parameter.Identifier, parameter.Value);
         }
 
@@ -189,7 +189,7 @@ public class EffectEngine : IDisposable
     /// Runs the setup function in the javascript.
     /// </summary>
     /// <returns> </returns>
-    public virtual async Task RunSetupAsync(CancellationToken token = default)
+    public virtual Task RunSetupAsync(CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
 
@@ -198,24 +198,19 @@ public class EffectEngine : IDisposable
             // Running both methods to first of all check that they are working and to make sure that we have run at least a single loop.
             _logger.LogTrace($"Running the invoke methods in the javascript for effect {Effect.Id}.");
 
-            // TODO: Big change this will of cause throw a AggregateException
-            // Memory Limit Exception MemoryLimitException
-            await Task.Run(() =>
-                           {
-                               // The two methods that we want to run and test.
-                               _engine.Invoke(SetupFunctionName);
-                               _engine.Invoke(LoopFunctionName);
-                           },
-                           token)
-                      .ConfigureAwait(false);
+            // The two methods that we want to run and test.
+            _engine.Invoke(SetupFunctionName);
+            _engine.Invoke(LoopFunctionName);
         }
         catch (JintException e)
         {
             _logger.LogTrace(e, "Error while running the setup for the effect engine.");
 
             // Rethrow the exception wrapped.
-            throw new EffectEngineRuntimeException(Effect, "Error while running the setup for the effect engine.", e);
+            return Task.FromException(new EffectEngineRuntimeException(Effect, "Error while running the setup for the effect engine.", e));
         }
+
+        return Task.CompletedTask;
     }
 
 

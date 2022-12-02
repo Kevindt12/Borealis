@@ -15,6 +15,7 @@
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="11.3.0" />
     <PackageReference Include="System.Device.Gpio" Version="2.2.0" />
+    <PackageReference Include="UnitsNet.nanoFramework.Frequency" Version="4.148.0" />
   </ItemGroup>
 
   <ItemGroup>

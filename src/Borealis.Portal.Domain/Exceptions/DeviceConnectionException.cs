@@ -1,4 +1,5 @@
 ﻿using Borealis.Portal.Domain.Devices;
+using Borealis.Shared.Extensions;
 
 
 
@@ -37,6 +38,13 @@ public class DeviceConnectionException : ApplicationException
 
     /// <inheritdoc />
     public DeviceConnectionException(String? message) : base(message) { }
+
+
+    /// <inheritdoc />
+    public DeviceConnectionException(String? message, ExceptionInfo info) : base(message)
+    {
+        Data.Add("Exception Info", info);
+    }
 
 
     /// <inheritdoc />

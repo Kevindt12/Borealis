@@ -27,25 +27,6 @@ public sealed class FrameMessage : MessageBase
     /// <summary>
     /// The frame used to send to drivers.
     /// </summary>
-    public FrameMessage(ReadOnlyMemory<byte> data)
-    {
-        // Gets the first part of the frame which is the index and the color spectrum used.
-        LedstripIndex = data.Span[0];
-        ColorSpectrum spectrum = (ColorSpectrum)data.Span[1];
-
-        Colors = spectrum switch
-        {
-            ColorSpectrum.Rgb   => Deserialize3ByteColors(data[2..]),
-            ColorSpectrum.Rgbw  => Deserialize4ByteColors(data[2..]),
-            ColorSpectrum.Rgbww => Deserialize5ByteColors(data[2..]),
-            _                   => throw new ArgumentOutOfRangeException(nameof(spectrum), "The spectrum is not set so cant serialize data.")
-        };
-    }
-
-
-    /// <summary>
-    /// The frame used to send to drivers.
-    /// </summary>
     /// <param name="ledstripIndex"> The index of the ledstrip. </param>
     /// <param name="colorSpectrum"> </param>
     /// <param name="colors"> The colors that we want to send. </param>
@@ -53,43 +34,72 @@ public sealed class FrameMessage : MessageBase
     {
         LedstripIndex = ledstripIndex;
         ColorSpectrum = colorSpectrum;
-        Colors = colors.ToArray();
+        Colors = colors;
     }
 
 
-    private static ReadOnlyMemory<PixelColor> Deserialize3ByteColors(ReadOnlyMemory<byte> data)
+    /// <summary>
+    /// The frame used to send to drivers.
+    /// </summary>
+    /// <param name="buffer"> The buffer we want to read the data from. </param>
+    /// <returns> A <see cref="FrameMessage" /> that has been deserialized. </returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// A exception thrown when the
+    /// <see cref="ColorSpectrum" /> is not in range.
+    /// </exception>
+    public static FrameMessage FromBuffer(ReadOnlyMemory<byte> buffer)
+    {
+        ReadOnlySpan<byte> data = buffer.Span;
+
+        // Gets the first part of the frame which is the index and the color spectrum used.
+        byte ledstripIndex = data[0];
+        ColorSpectrum spectrum = (ColorSpectrum)data[1];
+
+        ReadOnlyMemory<PixelColor> colors = spectrum switch
+        {
+            ColorSpectrum.Rgb   => Deserialize3ByteColors(data[2..]),
+            ColorSpectrum.Rgbw  => Deserialize4ByteColors(data[2..]),
+            ColorSpectrum.Rgbww => Deserialize5ByteColors(data[2..]),
+            _                   => throw new ArgumentOutOfRangeException(nameof(spectrum), "The spectrum is not set so cant serialize data.")
+        };
+
+        return new FrameMessage(ledstripIndex, spectrum, colors);
+    }
+
+
+    private static ReadOnlyMemory<PixelColor> Deserialize3ByteColors(ReadOnlySpan<byte> data)
     {
         PixelColor[] result = new PixelColor[data.Length / 3];
 
         for (int i = 0; i < data.Length;)
         {
-            result[i / 3] = new PixelColor(data.Span[i++], data.Span[i++], data.Span[i++]);
+            result[i / 3] = new PixelColor(data[i++], data[i++], data[i++]);
         }
 
         return result;
     }
 
 
-    private static ReadOnlyMemory<PixelColor> Deserialize4ByteColors(ReadOnlyMemory<byte> data)
+    private static ReadOnlyMemory<PixelColor> Deserialize4ByteColors(ReadOnlySpan<byte> data)
     {
         PixelColor[] result = new PixelColor[data.Length / 4];
 
         for (int i = 0; i < data.Length;)
         {
-            result[i / 3] = new PixelColor(data.Span[i++], data.Span[i++], data.Span[i++], data.Span[i++]);
+            result[i / 3] = new PixelColor(data[i++], data[i++], data[i++], data[i++]);
         }
 
         return result;
     }
 
 
-    private static ReadOnlyMemory<PixelColor> Deserialize5ByteColors(ReadOnlyMemory<byte> data)
+    private static ReadOnlyMemory<PixelColor> Deserialize5ByteColors(ReadOnlySpan<byte> data)
     {
         PixelColor[] result = new PixelColor[data.Length / 5];
 
         for (int i = 0; i < data.Length;)
         {
-            result[i / 3] = new PixelColor(data.Span[i++], data.Span[i++], data.Span[i++], data.Span[i++], data.Span[i++]);
+            result[i / 3] = new PixelColor(data[i++], data[i++], data[i++], data[i++], data[i++]);
         }
 
         return result;

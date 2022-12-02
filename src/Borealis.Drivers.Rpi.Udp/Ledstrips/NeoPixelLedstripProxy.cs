@@ -33,7 +33,7 @@ public sealed class NeoPixelStandardLedstripProxy : LedstripProxyBase, IDisposab
         _device = CreateSpiDevice(ledstrip);
 
         // Setting up the driver that we will use.
-        _driver = new Ws2815b(_device, ledstrip.Length);
+        _driver = new Ws2812b(_device, ledstrip.Length);
 
         PlayStartup();
     }
@@ -88,17 +88,17 @@ public sealed class NeoPixelStandardLedstripProxy : LedstripProxyBase, IDisposab
         {
             _logger.LogInformation($"Running test on ledstrip {Id}.");
 
-            _logger.LogDebug("Setting color to red.");
+            _logger.LogDebug($"Setting color to red. Colors Setting {(PixelColor)Color.Red}");
             SetColors(Enumerable.Repeat((PixelColor)Color.Red, Ledstrip.Length).ToArray());
-            Thread.Sleep(1000);
+            Thread.Sleep(1500);
 
-            _logger.LogDebug("Setting color to green.");
+            _logger.LogDebug($"Setting color to green. Colors Setting {(PixelColor)Color.Green}");
             SetColors(Enumerable.Repeat((PixelColor)Color.Green, Ledstrip.Length).ToArray());
-            Thread.Sleep(1000);
+            Thread.Sleep(1500);
 
-            _logger.LogDebug("Setting color to blue.");
+            _logger.LogDebug($"Setting color to blue. Colors Setting {(PixelColor)Color.Blue}");
             SetColors(Enumerable.Repeat((PixelColor)Color.Blue, Ledstrip.Length).ToArray());
-            Thread.Sleep(1000);
+            Thread.Sleep(1500);
 
             _logger.LogDebug("Clearing ledstrip...");
             Clear();

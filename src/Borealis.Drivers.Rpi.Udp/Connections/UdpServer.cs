@@ -97,13 +97,12 @@ public class UdpServer : IDisposable, IAsyncDisposable
     {
         try
         {
-            await Task.Run(() => packet.Identifier switch
-                       {
-                           PacketIdentifier.KeepAlive => HandleKeepAliveAsync(packet, remoteEndPoint),
-                           PacketIdentifier.Frame     => HandleFrame(packet),
-                           _                          => HandleUnknownPacketAsync(packet, remoteEndPoint)
-                       })
-                      .ConfigureAwait(false);
+            _ = Task.Run(() => packet.Identifier switch
+            {
+                PacketIdentifier.KeepAlive => HandleKeepAliveAsync(packet, remoteEndPoint),
+                PacketIdentifier.Frame     => HandleFrame(packet),
+                _                          => HandleUnknownPacketAsync(packet, remoteEndPoint)
+            });
         }
 
         catch (IOException ioException)
@@ -132,7 +131,7 @@ public class UdpServer : IDisposable, IAsyncDisposable
     /// <returns> </returns>
     protected virtual Task HandleFrame(CommunicationPacket packet)
     {
-        FrameReceived?.Invoke(this, packet.ReadPayload<FrameMessage>());
+        FrameReceived?.Invoke(this, packet.ReadPayload<FrameMessage>()!);
 
         return Task.CompletedTask;
     }

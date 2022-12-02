@@ -8,12 +8,17 @@
 
   <ItemGroup>
     <Folder Include="Animations\" />
+    <Folder Include="Communication\Exceptions\" />
     <Folder Include="Runtime\" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="11.3.0" />
     <PackageReference Include="System.Device.Gpio" Version="2.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Borealis.Shared\Borealis.Shared.csproj" />
   </ItemGroup>
 
 </Project>

@@ -5,7 +5,7 @@
 namespace Borealis.Domain.Effects;
 
 
-public struct PixelColor : IEquatable<PixelColor>
+public readonly struct PixelColor : IEquatable<PixelColor>
 {
     public byte R { get; init; }
 
@@ -52,7 +52,7 @@ public struct PixelColor : IEquatable<PixelColor>
 
     public static implicit operator Color(PixelColor color)
     {
-        return Color.FromArgb(color.R, color.G, color.B);
+        return Color.FromArgb(255, color.R, color.G, color.B);
     }
 
 

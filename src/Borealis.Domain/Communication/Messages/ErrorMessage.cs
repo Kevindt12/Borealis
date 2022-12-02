@@ -1,4 +1,8 @@
 ﻿using System.Text;
+using System.Text.Json;
+
+using Borealis.Domain.Communication.Exceptions;
+using Borealis.Shared.Extensions;
 
 
 
@@ -7,40 +11,44 @@ namespace Borealis.Domain.Communication.Messages;
 
 public sealed class ErrorMessage : MessageBase
 {
-    private readonly string? _message;
+    /// <summary>
+    /// The error message that we want to display.
+    /// </summary>
+    /// <remarks>
+    /// If we don't supply a message we will just use the one from the exception.
+    /// </remarks>
+    public string? Message { get; init; }
 
-    public string Message => _message ?? (Exception.InnerException ?? Exception)?.Message ?? "Unknown Error.";
+    //  _message ?? (Exception?.InnerException ?? Exception)?.Message ?? "Unknown Error.";
 
-    public Exception? Exception { get; }
+    /// <summary>
+    /// A optional exception that we can fill to send to the other side.
+    /// </summary>
+    /// <remarks>
+    /// Note that if the <see cref="Type" /> does not exist in a other assembly then the calling one it will default to
+    /// <see cref="null" />
+    /// </remarks>
+    public ExceptionInfo? Exception { get; init; }
+
+
+    protected ErrorMessage(ExceptionInfo? info, string? message) { }
 
 
     /// <summary>
-    /// The Error message used for deserialization.
+    /// Creates a error message from a received buffer.
     /// </summary>
-    /// <param name="buffer"> </param>
-    public ErrorMessage(ReadOnlyMemory<byte> buffer)
+    /// <param name="buffer"> The buffer we received. </param>
+    /// <returns> A <see cref="ErrorMessage" /> that has been populated. </returns>
+    /// <exception cref="CommunicationException"> When the format of the payload is not correct. </exception>
+    public static ErrorMessage FromBuffer(ReadOnlyMemory<byte> buffer)
     {
-        // Deserialize message.
-        int length = BitConverter.ToInt32(buffer[..3].ToArray(), 0);
-        PayloadType type = (PayloadType)buffer.Span[4];
-        string message = Encoding.ASCII.GetString(buffer[5..].Span);
-
-        if (type == PayloadType.Exception)
+        try
         {
-            Type? exceptionType = Type.GetType(message);
-
-            if (exceptionType == null)
-            {
-                _message = message;
-
-                return;
-            }
-
-            Exception = (Exception)Activator.CreateInstance(exceptionType)!;
+            return JsonSerializer.Deserialize<ErrorMessage>(buffer.Span)!;
         }
-        else if (type == PayloadType.String)
+        catch (JsonException e)
         {
-            _message = message;
+            throw new CommunicationException("Wrong payload format.", e);
         }
     }
 
@@ -49,9 +57,9 @@ public sealed class ErrorMessage : MessageBase
     /// A error message based on a <see cref="Exception" />
     /// </summary>
     /// <param name="exception"> The <see cref="Exception" /> that we want to encapsulate in this send-able error message. </param>
-    public ErrorMessage(Exception? exception)
+    public ErrorMessage(Exception exception)
     {
-        Exception = exception;
+        Exception = new ExceptionInfo(exception);
     }
 
 
@@ -61,37 +69,32 @@ public sealed class ErrorMessage : MessageBase
     /// <param name="message"> The string message error. </param>
     public ErrorMessage(string message)
     {
-        _message = message;
+        Message = message;
     }
 
 
-    /// Type | PayloadType = byte = The enum that selects the error type we are sending in this case | String | Exception.
-    /// 
-    /// |  length |  Type  |  Type name || String  |   
-    /// | 4 bytes |  byte  |      VAR Bytes        |
-    /// |   int   |  byte  |  ReadOnlyMemory Bytes |
+    /// <summary>
+    /// A error message based on a <see cref="string" /> message.
+    /// </summary>
+    /// <param name="message"> The string message error. </param>
+    /// <param name="exception"> The <see cref="Exception" /> that we want to encapsulate in this send-able error message. </param>
+    public ErrorMessage(string message, Exception exception)
+    {
+        Message = message;
+        Exception = new ExceptionInfo(exception);
+    }
+
+
     /// <inheritdoc />
     public override ReadOnlyMemory<Byte> Serialize()
     {
-        // Getting the Variables.
-        byte type = (byte)(Exception == null ? PayloadType.String : PayloadType.Exception);
-        string message = Exception?.GetType().FullName ?? _message ?? "Unknown";
-        int length = message.Length + 1;
+        // Serialize to json.
+        string json = JsonSerializer.Serialize(this);
 
-        byte[] buffer = new Byte[length];
-
-        BitConverter.GetBytes(length).CopyTo(buffer, 0);
-        buffer[4] = type;
-        Encoding.ASCII.GetBytes(message).CopyTo(buffer, 5);
+        // Creating and filling buffer.
+        byte[] buffer = new Byte[json.Length];
+        Encoding.UTF8.GetBytes(json).CopyTo(buffer, 0);
 
         return buffer;
-    }
-
-
-
-    private enum PayloadType : byte
-    {
-        Exception,
-        String
     }
 }

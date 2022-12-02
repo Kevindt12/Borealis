@@ -199,6 +199,7 @@ public class EffectEngine : IDisposable
             _logger.LogTrace($"Running the invoke methods in the javascript for effect {Effect.Id}.");
 
             // TODO: Big change this will of cause throw a AggregateException
+            // Memory Limit Exception MemoryLimitException
             await Task.Run(() =>
                            {
                                // The two methods that we want to run and test.
@@ -229,8 +230,11 @@ public class EffectEngine : IDisposable
             // Running the function.
             _engine.Invoke(LoopFunctionName);
 
-            // Getting the pixel array wrapping it in a memory and sending it back as a read only.
-            ReadOnlyMemory<PixelColor> colors = new ReadOnlyMemory<PixelColor>(_engine.GetValue(PixelsName).AsArray().AsInstance<PixelColor[]>());
+            // Getting the items boxed.
+            IEnumerable<object> boxedColors = _engine.GetValue(PixelsName).AsArray().ToObject() as object[] ?? throw new EffectEngineRuntimeException(Effect, "The pixels where null");
+
+            // Converts the type to PixelColor and
+            ReadOnlyMemory<PixelColor> colors = new ReadOnlyMemory<PixelColor>(boxedColors.OfType<PixelColor>().ToArray());
 
             return ValueTask.FromResult(colors);
         }

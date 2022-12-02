@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System.Net;
+using System.Net.Sockets;
 
 using Borealis.Domain.Communication;
 using Borealis.Portal.Domain.Devices;
@@ -48,7 +49,8 @@ internal class CombinedDeviceConnection : DeviceConnectionBase
             await tcpClient.ConnectAsync(device.EndPoint, token);
 
             // UDP
-            udpClient.Connect(device.EndPoint);
+            IPEndPoint udpEndPoint = new IPEndPoint(device.EndPoint.Address, device.EndPoint.Port + 1);
+            udpClient.Connect(udpEndPoint);
         }
         catch (SocketException e)
         {
@@ -95,13 +97,16 @@ internal class CombinedDeviceConnection : DeviceConnectionBase
 
             try
             {
-                Memory<byte> buffer = new Memory<byte>();
-                _ = await _stream.ReadAsync(buffer, cts.Token);
+                byte[] buffer = new Byte[512];
+                int bytesRead = await _stream.ReadAsync(buffer, cts.Token);
+
+                Array.Resize(ref buffer, bytesRead);
 
                 return CommunicationPacket.FromBuffer(buffer);
             }
             catch (OperationCanceledException e)
             {
+                // TODO: Add logging maybe inform the user.
                 return null;
             }
         }

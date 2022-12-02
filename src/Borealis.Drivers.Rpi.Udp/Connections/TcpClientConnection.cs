@@ -55,7 +55,7 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
 
         // Starting the listening task.\
         _stoppingToken = new CancellationTokenSource();
-        _runningTask = Task.Factory.StartNew(RunningTaskLoop, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+        _runningTask = Task.Run(RunningTaskLoop);
     }
 
 
@@ -75,9 +75,11 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
                 try
                 {
                     // Creating the buffer and reading.
-                    Memory<byte> buffer = new Memory<Byte>();
+                    byte[] buffer = new Byte[4096];
 
                     int bytesRead = await _stream.ReadAsync(buffer);
+
+                    Array.Resize(ref buffer, bytesRead);
 
                     // Decoing the packet.
                     CommunicationPacket packet = CommunicationPacket.FromBuffer(buffer);

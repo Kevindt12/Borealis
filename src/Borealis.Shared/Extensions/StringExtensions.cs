@@ -7,6 +7,7 @@ namespace Borealis.Shared.Extensions;
 
 public static class StringExtensions
 {
+    // TODO: Replace with structured logging.
     /// <summary>
     /// Logs a object to a json format for logging.
     /// </summary>

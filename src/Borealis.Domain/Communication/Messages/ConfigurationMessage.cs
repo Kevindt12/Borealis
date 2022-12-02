@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
 
+using Borealis.Domain.Communication.Exceptions;
 using Borealis.Domain.Devices;
 
 
@@ -13,45 +14,52 @@ public class ConfigurationMessage : MessageBase
     /// <summary>
     /// The ledstrips configuration.
     /// </summary>
-    public LedstripSettings Settings { get; set; } = new LedstripSettings();
+    public LedstripSettings Settings { get; init; }
 
 
     /// <summary>
-    /// This is used for incoming messages to decode.
+    /// A configuration message that can be send to driver devices.
     /// </summary>
-    /// <param name="buffer"> </param>
-    public ConfigurationMessage(ReadOnlyMemory<byte> buffer)
-    {
-        try
-        {
-            string json = Encoding.ASCII.GetString(buffer.Span);
-
-            LedstripSettings ledstrip = JsonSerializer.Deserialize<LedstripSettings>(json)!;
-        }
-        catch (Exception e)
-        {
-            // TODO: Error handling.
-        }
-    }
-
-
+    /// <param name="settings"> The configuration settings that we want to send to the device. </param>
     public ConfigurationMessage(LedstripSettings settings)
     {
         Settings = settings;
     }
 
 
+    /// <summary>
+    /// Creates a new <see cref="ConfigurationMessage" /> that can be deserialized.
+    /// </summary>
+    /// <param name="buffer"> The buffer payload that we got. </param>
+    /// <returns> A populated <see cref="ConfigurationMessage" /> message. </returns>
+    /// <exception cref="CommunicationException"> When the payload Json was unable to be deserialized. </exception>
     public static ConfigurationMessage FromBuffer(ReadOnlyMemory<byte> buffer)
     {
-        return new ConfigurationMessage(buffer);
+        try
+        {
+            // Reading the json that we got.
+            string json = Encoding.ASCII.GetString(buffer.Span);
+
+            // Deserialize the ledstrip configuration.
+            LedstripSettings ledstrip = JsonSerializer.Deserialize<LedstripSettings>(json)!;
+
+            // Returning the configuration.
+            return new ConfigurationMessage(ledstrip);
+        }
+        catch (JsonException jsonException)
+        {
+            throw new CommunicationException("The Json of a configuration package could not be deserialized.", jsonException);
+        }
     }
 
 
     /// <inheritdoc />
     public override ReadOnlyMemory<Byte> Serialize()
     {
+        // Serializing the settings.
         string json = JsonSerializer.Serialize(Settings);
 
+        // Encoding it and sending it out.
         return Encoding.ASCII.GetBytes(json);
     }
 }

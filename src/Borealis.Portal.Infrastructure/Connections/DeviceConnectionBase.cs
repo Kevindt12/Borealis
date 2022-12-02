@@ -66,10 +66,10 @@ internal abstract class DeviceConnectionBase : IDeviceConnection
         else if (resultPacket.Identifier == PacketIdentifier.Error)
         {
             // Getting the error packet.
-            ErrorMessage errorMessage = new ErrorMessage(resultPacket.Payload!.Value);
+            ErrorMessage errorMessage = ErrorMessage.FromBuffer(resultPacket.Payload!.Value);
 
             // Throwing the error message.
-            throw errorMessage.Exception != null ? new DeviceConnectionException("There was a problem with uploading the device configuration.", errorMessage.Exception) : new DeviceConnectionException($"There was a problem with uploading the device configuration., {errorMessage.Message}.");
+            throw errorMessage.Exception != null ? new DeviceConnectionException("There was a problem with uploading the device configuration", errorMessage.Exception) : new DeviceConnectionException($"There was a problem with uploading the device configuration., {errorMessage.Message}.");
         }
         else
         {

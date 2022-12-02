@@ -21,7 +21,7 @@ public readonly struct CommunicationPacket
     /// </summary>
     public ReadOnlyMemory<byte>? Payload { get; init; }
 
-
+    // TODO: Switch its inverted
     /// <summary>
     /// Indicating that the packet has a payload attached.
     /// </summary>
@@ -40,7 +40,7 @@ public readonly struct CommunicationPacket
     {
         Identifier = (PacketIdentifier)payload.Span[0];
 
-        Payload = payload.Slice(1);
+        Payload = payload[1..];
     }
 
 
@@ -81,10 +81,10 @@ public readonly struct CommunicationPacket
         {
             Identifier = message switch
             {
-                FrameMessage frameMessage                 => PacketIdentifier.Frame,
-                ConfigurationMessage configurationMessage => PacketIdentifier.Configuration,
-                ErrorMessage errorMessage                 => PacketIdentifier.Error,
-                _                                         => throw new InvalidOperationException("The message has not been implemented.")
+                FrameMessage         => PacketIdentifier.Frame,
+                ConfigurationMessage => PacketIdentifier.Configuration,
+                ErrorMessage         => PacketIdentifier.Error,
+                _                    => throw new InvalidOperationException("The message has not been implemented.")
             },
             Payload = message.Serialize()
         };
@@ -149,16 +149,16 @@ public readonly struct CommunicationPacket
     /// Thrown when the
     /// <see cref="PacketIdentifier" /> is not in a valid state.
     /// </exception>
-    public TMessageType ReadPayload<TMessageType>() where TMessageType : MessageBase?
+    public TMessageType? ReadPayload<TMessageType>() where TMessageType : MessageBase?
     {
         return (Identifier switch
         {
             PacketIdentifier.KeepAlive     => null,
             PacketIdentifier.Disconnect    => null,
             PacketIdentifier.Connect       => null,
-            PacketIdentifier.Error         => new ErrorMessage(Payload!.Value) as TMessageType,
-            PacketIdentifier.Frame         => new FrameMessage(Payload!.Value) as TMessageType,
-            PacketIdentifier.Configuration => new ConfigurationMessage(Payload!.Value) as TMessageType,
+            PacketIdentifier.Error         => ErrorMessage.FromBuffer(Payload!.Value) as TMessageType,
+            PacketIdentifier.Frame         => FrameMessage.FromBuffer(Payload!.Value) as TMessageType,
+            PacketIdentifier.Configuration => ConfigurationMessage.FromBuffer(Payload!.Value) as TMessageType,
             PacketIdentifier.Acknowledge   => null,
             _                              => throw new IndexOutOfRangeException("The PacketIdentifier was out of range.")
         })!;

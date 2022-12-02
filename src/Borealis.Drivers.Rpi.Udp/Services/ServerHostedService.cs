@@ -64,7 +64,7 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
         try
         {
             // Getting the port.
-            int port = _serverOptions.ServerPort;
+            int port = _serverOptions.ServerPort + 1;
 
             // Creating the server.
             _logger.LogInformation($"Starting UDP Server on port {port}.");

@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="UnitsNet.nanoFramework.Frequency" Version="4.148.0" />
+    <PackageReference Include="UnitsNet" Version="4.149.0" />
   </ItemGroup>
 
 </Project>

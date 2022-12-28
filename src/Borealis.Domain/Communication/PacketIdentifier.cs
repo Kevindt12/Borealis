@@ -22,12 +22,27 @@ public enum PacketIdentifier : byte
     /// <summary>
     /// The packet we send when we want to send a frame.
     /// </summary>
-    Frame = 2,
+    Frame = 10,
+
+    Start = 6,
+
+    Stop = 7,
+
+
+    /// <summary>
+    /// Indicating that we have a packet with frames for the device to buffer ready to display.
+    /// </summary>
+    Frames = 11,
 
     /// <summary>
     /// A packet that wants to indicate that we want to connect.
     /// </summary>
     Connect = 3,
+
+    /// <summary>
+    /// Sends the size of the drivers buffer. This so we can or speed up or slow down the packages that we are sending.
+    /// </summary>
+    BufferSize = 5,
 
 
     /// <summary>

@@ -3,6 +3,8 @@ using System.Net.Sockets;
 
 using Borealis.Domain.Communication;
 using Borealis.Domain.Communication.Messages;
+using Borealis.Domain.Effects;
+using Borealis.Drivers.Rpi.Udp.Contexts;
 
 
 
@@ -13,10 +15,12 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
 {
     private readonly ILogger<TcpClientConnection> _logger;
     private readonly TcpClient _client;
+    private readonly LedstripContext _ledstripContext;
     private readonly NetworkStream _stream;
 
     private readonly CancellationTokenSource? _stoppingToken;
     private readonly Task? _runningTask;
+
 
     /// <summary>
     /// If the UDP Connection server is running.
@@ -45,11 +49,12 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
     public virtual EndPoint RemoteEndPoint { get; init; }
 
 
-    public TcpClientConnection(ILogger<TcpClientConnection> logger, TcpClient client)
+    public TcpClientConnection(ILogger<TcpClientConnection> logger, TcpClient client, LedstripContext ledstripContext)
     {
         _logger = logger;
         _stream = client.GetStream();
         _client = client;
+        _ledstripContext = ledstripContext;
 
         RemoteEndPoint = client.Client.RemoteEndPoint!;
 
@@ -75,11 +80,10 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
                 try
                 {
                     // Creating the buffer and reading.
-                    byte[] buffer = new Byte[4096];
+
+                    Memory<byte> buffer = new Memory<Byte>();
 
                     int bytesRead = await _stream.ReadAsync(buffer);
-
-                    Array.Resize(ref buffer, bytesRead);
 
                     // Decoing the packet.
                     CommunicationPacket packet = CommunicationPacket.FromBuffer(buffer);
@@ -115,11 +119,48 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
                    {
                        PacketIdentifier.KeepAlive     => HandleKeepAliveAsync(packet),
                        PacketIdentifier.Frame         => HandleFrame(packet),
+                       PacketIdentifier.Frames        => HandleFrames(packet),
+                       PacketIdentifier.Start         => HandleStartFrames(packet),
+                       PacketIdentifier.Stop          => HandleStopAsync(packet),
                        PacketIdentifier.Disconnect    => HandleDisconnect(packet),
                        PacketIdentifier.Configuration => HandleConfiguration(packet),
                        _                              => HandleUnknownPacketAsync(packet)
                    })
                   .ConfigureAwait(false);
+    }
+
+
+    private async Task HandleStopAsync(CommunicationPacket packet)
+    {
+        StopMessage message = packet.ReadPayload<StopMessage>()!;
+
+        await _ledstripContext.StopAnimationAsync(message.LedstripIndex);
+    }
+
+
+    private async Task HandleStartFrames(CommunicationPacket packet)
+    {
+        StartMessage message = packet.ReadPayload<StartMessage>()!;
+
+        await _ledstripContext.StartAnimationAsync(message.LedstripIndex, message.FrameDelay);
+    }
+
+
+    /// <summary>
+    /// Handle a frame message.
+    /// </summary>
+    /// <param name="packet"> The frame packet. </param>
+    /// <returns> </returns>
+    protected virtual async Task HandleFrames(CommunicationPacket packet)
+    {
+        FramesMessage message = packet.ReadPayload<FramesMessage>()!;
+
+        foreach (ReadOnlyMemory<PixelColor> frame in message.Frames)
+        {
+            int totalStackSize = _ledstripContext.PushStack(message.LedstripIndex, message.Frames);
+
+            await SendAsync(CommunicationPacket.CreatePacketFromMessage(new StackSizeMessage(totalStackSize)));
+        }
     }
 
 
@@ -198,6 +239,17 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
     protected virtual async Task SendAcknowledgment(CommunicationPacket packet)
     {
         await _stream.WriteAsync(packet.GenerateAcknowledgementPacket().CreateBuffer()).ConfigureAwait(false);
+        await _stream.FlushAsync().ConfigureAwait(false);
+    }
+
+
+    /// <summary>
+    /// Sends back to the client that we have received the packet that was send.
+    /// </summary>
+    /// <param name="packet"> The packet that we received. We wil transfer this into a packet to send back. </param>
+    protected virtual async Task SendAsync(CommunicationPacket packet)
+    {
+        await _stream.WriteAsync(packet.CreateBuffer()).ConfigureAwait(false);
         await _stream.FlushAsync().ConfigureAwait(false);
     }
 

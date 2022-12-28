@@ -2,7 +2,9 @@
 using System.Linq;
 
 using Borealis.Domain.Devices;
+using Borealis.Domain.Effects;
 using Borealis.Drivers.Rpi.Udp.Exceptions;
+using Borealis.Drivers.Rpi.Udp.Handlers;
 using Borealis.Drivers.Rpi.Udp.Ledstrips;
 
 
@@ -14,8 +16,9 @@ public class LedstripContext : IDisposable
 {
     private readonly ILogger<LedstripContext> _logger;
     private readonly LedstripProxyFactory _ledstripProxyFactory;
-    private readonly List<LedstripProxyBase> _ledstrips;
 
+    private readonly List<LedstripProxyBase> _ledstrips;
+    private readonly Dictionary<LedstripProxyBase, BufferedAnimationHandler?> _animationHandlers = new Dictionary<LedstripProxyBase, BufferedAnimationHandler?>();
 
     /// <summary>
     /// Getting a Ledstrip proxy by the index in the configuration.
@@ -74,6 +77,25 @@ public class LedstripContext : IDisposable
                 _logger.LogError(notImplementedException, "The selected ledstrip with the current settings have not been implemented.");
             }
         }
+
+        _animationHandlers.Clear();
+        _ledstrips.ForEach(x => _animationHandlers[x] = new BufferedAnimationHandler(x));
+    }
+
+
+    /// <summary>
+    /// </summary>
+    /// <param name="ledstripIndex"> </param>
+    /// <param name="frames"> </param>
+    /// <returns> The amount of times are now in the stack. </returns>
+    public int PushStack(int ledstripIndex, IEnumerable<ReadOnlyMemory<PixelColor>> frames)
+    {
+        foreach (ReadOnlyMemory<PixelColor> frame in frames)
+        {
+            _animationHandlers[_ledstrips[ledstripIndex]]!.FrameBuffer.Push(frame);
+        }
+
+        return _animationHandlers[_ledstrips[ledstripIndex]]!.FrameBuffer.Count;
     }
 
 
@@ -107,5 +129,17 @@ public class LedstripContext : IDisposable
     public void Dispose()
     {
         CleanupLedstrips();
+    }
+
+
+    public async Task StartAnimationAsync(int ledstripIndex, int messageFrameDelay)
+    {
+        await _animationHandlers[_ledstrips[ledstripIndex]]!.StartAsync(messageFrameDelay);
+    }
+
+
+    public async Task StopAnimationAsync(Int32 ledstripIndex)
+    {
+        await _animationHandlers[_ledstrips[ledstripIndex]]!.StopAsync();
     }
 }

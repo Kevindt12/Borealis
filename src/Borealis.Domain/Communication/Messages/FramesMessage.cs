@@ -18,15 +18,10 @@ public sealed class FramesMessage : MessageBase
     /// </summary>
     public ColorSpectrum ColorSpectrum { get; }
 
-
-    public int FrameCount => Frames.Count;
-
-    public int FrameSize { get; init; }
-
     /// <summary>
     /// The colors of the ledstrip.
     /// </summary>
-    public IReadOnlyList<ReadOnlyMemory<PixelColor>> Frames { get; }
+    public IReadOnlyList<FrameData> Frames { get; }
 
 
     /// <summary>
@@ -39,7 +34,7 @@ public sealed class FramesMessage : MessageBase
     {
         LedstripIndex = ledstripIndex;
         ColorSpectrum = colorSpectrum;
-        Frames = new List<ReadOnlyMemory<PixelColor>>(frames);
+        Frames = new List<FrameData>(frames.Select(x => new FrameData(x, colorSpectrum)));
 
         if (Frames.Any())
         {

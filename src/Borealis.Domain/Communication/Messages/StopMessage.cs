@@ -10,11 +10,7 @@ namespace Borealis.Domain.Communication.Messages;
 
 public class StopMessage : MessageBase
 {
-    public int FrameDelay { get; init; }
-
     public int LedstripIndex { get; set; }
-
-    //  _message ?? (Exception?.InnerException ?? Exception)?.Message ?? "Unknown Error.";
 
 
     /// <summary>
@@ -40,9 +36,8 @@ public class StopMessage : MessageBase
     /// A error message based on a <see cref="string" /> message.
     /// </summary>
     /// <param name="frameDelay"> The string message error. </param>
-    public StopMessage(int frameDelay, int ledstripIndex)
+    public StopMessage(int ledstripIndex)
     {
-        FrameDelay = frameDelay;
         LedstripIndex = ledstripIndex;
     }
 

@@ -24,6 +24,8 @@ internal class AnimationPlayer : IAnimationPlayer
 
     private EffectEngine _effectEngine;
 
+    public int AimedStackSize { get; set; } = 100;
+
 
     public virtual Animation Animation { get; }
 
@@ -101,6 +103,9 @@ internal class AnimationPlayer : IAnimationPlayer
             _logger.LogTrace($"Running setup of animation {Animation.Id}.");
             await _effectEngine.RunSetupAsync(token).ConfigureAwait(false);
 
+            _logger.LogTrace("Sending the first frames for to full the buffer.");
+            await Ledstrip.SendFramesBufferAsync(await BuildFramesPackage(AimedStackSize), token);
+
             _logger.LogTrace("The start task ");
             await StartTaskAsync(token).ConfigureAwait(false);
         }
@@ -119,16 +124,41 @@ internal class AnimationPlayer : IAnimationPlayer
 
     private async Task TaskStartAsync()
     {
+        _logger.LogTrace("Starting the new task and telling the ledstrip that we are starting.");
+        await Ledstrip.StartAnimationAsync();
+
         // Checking the stopping token if we need to stop.
         while (!_stoppingToken!.Token.IsCancellationRequested)
         {
-            ReadOnlyMemory<PixelColor> colors = await _effectEngine.RunLoopAsync().ConfigureAwait(false);
+            // Sends the current frames to the device.
+            int framesCount = await Ledstrip.SendFramesBufferAsync(await BuildFramesPackage(AimedStackSize), _stoppingToken!.Token);
 
-            await Ledstrip.SendFrameAsync(colors);
+            if (framesCount < AimedStackSize)
+            {
+                continue;
+            }
 
-            // HACK: should become PeriodicTimer
-            await Task.Delay((int)(1000 / Animation.Frequency.PerSecond));
+            framesCount = AimedStackSize - framesCount;
+
+            int totalWaitTime = (int)(1000 / Animation.Frequency.PerSecond) * framesCount;
+            await Task.Delay(totalWaitTime);
         }
+
+        _logger.LogTrace("Telling the device that we are stopping the animation.");
+        await Ledstrip.StopAnimationAsync();
+    }
+
+
+    private async Task<IEnumerable<ReadOnlyMemory<PixelColor>>> BuildFramesPackage(int framesCount)
+    {
+        List<ReadOnlyMemory<PixelColor>> result = new List<ReadOnlyMemory<PixelColor>>();
+
+        for (int i = 0; i < framesCount; i++)
+        {
+            result.Add(await _effectEngine.RunLoopAsync().ConfigureAwait(false));
+        }
+
+        return result;
     }
 
 

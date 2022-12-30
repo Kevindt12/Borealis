@@ -42,7 +42,7 @@ public enum PacketIdentifier : byte
     /// <summary>
     /// Sends the size of the drivers buffer. This so we can or speed up or slow down the packages that we are sending.
     /// </summary>
-    BufferSize = 5,
+    BufferSize = 8,
 
 
     /// <summary>

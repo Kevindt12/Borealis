@@ -21,7 +21,7 @@ public sealed class FramesMessage : MessageBase
     /// <summary>
     /// The colors of the ledstrip.
     /// </summary>
-    public IReadOnlyList<FrameData> Frames { get; }
+    public FrameDataCollection Frames { get; }
 
 
     /// <summary>
@@ -30,16 +30,11 @@ public sealed class FramesMessage : MessageBase
     /// <param name="ledstripIndex"> The index of the ledstrip. </param>
     /// <param name="colorSpectrum"> </param>
     /// <param name="colors"> The colors that we want to send. </param>
-    public FramesMessage(byte ledstripIndex, ColorSpectrum colorSpectrum, int frameSize, IEnumerable<ReadOnlyMemory<PixelColor>> frames)
+    public FramesMessage(byte ledstripIndex, ColorSpectrum colorSpectrum, IEnumerable<FrameData> frames)
     {
         LedstripIndex = ledstripIndex;
         ColorSpectrum = colorSpectrum;
-        Frames = new List<FrameData>(frames.Select(x => new FrameData(x, colorSpectrum)));
-
-        if (Frames.Any())
-        {
-            FrameSize = Frames[0].Length;
-        }
+        Frames = new FrameDataCollection(frames);
     }
 
 
@@ -63,23 +58,18 @@ public sealed class FramesMessage : MessageBase
         int framesCount = BitConverter.ToInt32(data[7..10]);
 
         ReadOnlySpan<byte> framesData = data.Slice(11);
-        ReadOnlyMemory<PixelColor>[] colors = new ReadOnlyMemory<PixelColor>[framesCount];
+        FrameDataCollection frames = new FrameDataCollection();
 
         for (int i = 0; i < framesCount; i++)
         {
-            int startIndex = i * framesSize * GetBytesPerLed(spectrum);
-            int endIndex = (i + 1) * framesSize * GetBytesPerLed(spectrum) - 1;
+            ReadOnlySpan<byte> frameData = data.Slice(i * framesSize, (i + 1) * framesSize);
 
-            colors[i] = spectrum switch
-            {
-                ColorSpectrum.Rgb   => Deserialize3ByteColors(framesData[startIndex..endIndex]),
-                ColorSpectrum.Rgbw  => Deserialize4ByteColors(framesData[startIndex..endIndex]),
-                ColorSpectrum.Rgbww => Deserialize5ByteColors(framesData[startIndex..endIndex]),
-                _                   => throw new ArgumentOutOfRangeException(nameof(spectrum), "The spectrum is not set so cant serialize data.")
-            };
+            FrameData frame = FrameData.FromBuffer(spectrum, frameData.ToArray());
+
+            frames.Add(frame);
         }
 
-        return new FramesMessage(ledstripIndex, spectrum, framesSize, colors);
+        return new FramesMessage(ledstripIndex, spectrum, frames);
     }
 
 
@@ -126,47 +116,20 @@ public sealed class FramesMessage : MessageBase
     public override ReadOnlyMemory<Byte> Serialize()
     {
         // Need 10 bytes for the header.
-        byte[] result = new byte[10 + FrameCount * FrameSize * GetBytesPerLed(ColorSpectrum)];
+        byte[] result = new byte[10 + Frames.Count * Frames.FrameSize];
 
         // Setting the ledstrip index.
         result[0] = Convert.ToByte(LedstripIndex);
         result[1] = Convert.ToByte((byte)ColorSpectrum);
-        BitConverter.GetBytes(FrameSize).CopyTo(result, 3);
-        BitConverter.GetBytes(FrameCount).CopyTo(result, 7);
+        BitConverter.GetBytes(Frames.Count).CopyTo(result, 3);
+        BitConverter.GetBytes(Frames.FrameSize).CopyTo(result, 7);
 
         for (int frameIndex = 0; frameIndex < Frames.Count; frameIndex++)
         {
-            ReadOnlyMemory<PixelColor> frame = Frames[frameIndex];
-
-            // Setting all the colors.
-            for (int i = 11 + frameIndex * FrameSize * GetBytesPerLed(ColorSpectrum),
-                     ci = 0; i < result.Length;)
-            {
-                // The default RGB
-                result[i++] = frame.Span[ci].R;
-                result[i++] = frame.Span[ci].G;
-                result[i++] = frame.Span[ci].B;
-
-                // If W is added then we add it. same with WW
-                if (ColorSpectrum == ColorSpectrum.Rgbw) result[i++] = frame.Span[ci].W;
-                if (ColorSpectrum == ColorSpectrum.Rgbww) result[i++] = frame.Span[ci].WW;
-
-                // Up the color index.
-                ci++;
-            }
+            FrameData frame = Frames[frameIndex];
+            frame.CopyTo(result, 10 + Frames.FrameSize * frameIndex);
         }
 
         return result;
     }
-
-
-    private static int GetBytesPerLed(ColorSpectrum colorSpectrum) =>
-        colorSpectrum switch
-
-        {
-            ColorSpectrum.Rgb   => 3,
-            ColorSpectrum.Rgbw  => 4,
-            ColorSpectrum.Rgbww => 5,
-            _                   => throw new ArgumentOutOfRangeException(nameof(ColorSpectrum), "Color spectrum unknown.")
-        };
 }

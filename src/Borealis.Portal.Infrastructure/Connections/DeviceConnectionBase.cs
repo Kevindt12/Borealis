@@ -104,6 +104,21 @@ internal abstract class DeviceConnectionBase : IDeviceConnection
     internal abstract Task<CommunicationPacket?> SendConfirmedPacketAsync(CommunicationPacket packet, CancellationToken token = default);
 
 
+    /// <summary>
+    /// Sends a packet that we want to have confirmed.
+    /// </summary>
+    /// <param name="packet"> The packet that we want to receive. </param>
+    /// <param name="token"> A token to cancel the current operation. </param>
+    /// <returns>
+    /// A <see cref="CommunicationPacket" /> that we received back from the device. This can also be
+    /// <see>
+    /// <cref> null </cref>
+    /// </see>
+    /// if nothing was received.
+    /// </returns>
+    internal abstract Task<CommunicationPacket> SendResponsivePacketAsync(CommunicationPacket packet, CancellationToken token = default);
+
+
     #region IDisposable
 
     private bool _disposed;

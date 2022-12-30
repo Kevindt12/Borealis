@@ -83,6 +83,10 @@ public readonly struct CommunicationPacket
                 FrameMessage         => PacketIdentifier.Frame,
                 ConfigurationMessage => PacketIdentifier.Configuration,
                 ErrorMessage         => PacketIdentifier.Error,
+                FramesMessage        => PacketIdentifier.Frames,
+                StackSizeMessage     => PacketIdentifier.BufferSize,
+                StartMessage         => PacketIdentifier.Start,
+                StopMessage          => PacketIdentifier.Stop,
                 _                    => throw new InvalidOperationException("The message has not been implemented.")
             },
             Payload = message.Serialize()
@@ -158,8 +162,13 @@ public readonly struct CommunicationPacket
             PacketIdentifier.Error         => ErrorMessage.FromBuffer(Payload!.Value) as TMessageType,
             PacketIdentifier.Frame         => FrameMessage.FromBuffer(Payload!.Value) as TMessageType,
             PacketIdentifier.Configuration => ConfigurationMessage.FromBuffer(Payload!.Value) as TMessageType,
-            PacketIdentifier.Acknowledge   => null,
-            _                              => throw new IndexOutOfRangeException("The PacketIdentifier was out of range.")
+            PacketIdentifier.Frames        => FramesMessage.FromBuffer(Payload!.Value) as TMessageType,
+            PacketIdentifier.BufferSize    => StackSizeMessage.FromBuffer(Payload!.Value) as TMessageType,
+            PacketIdentifier.Start         => StartMessage.FromBuffer(Payload!.Value) as TMessageType,
+            PacketIdentifier.Stop          => StopMessage.FromBuffer(Payload!.Value) as TMessageType,
+
+            PacketIdentifier.Acknowledge => null,
+            _                            => throw new IndexOutOfRangeException("The PacketIdentifier was out of range.")
         })!;
     }
 

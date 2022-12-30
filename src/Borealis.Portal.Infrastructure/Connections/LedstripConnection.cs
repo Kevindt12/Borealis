@@ -34,6 +34,12 @@ internal class LedstripConnection : ILedstripConnection
     }
 
 
+    public async Task<int> SendFramesBufferAsync(IEnumerable<ReadOnlyMemory<PixelColor>> frames, ColorSpectrum colors, CancellationToken token = default)
+    {
+        await _deviceConnection.SendUnconfirmedPacketAsync(CommunicationPacket.CreatePacketFromMessage(new FramesMessage(_ledstripIndex, Ledstrip.Colors, frames.Select(x => new FrameData(x, colors)))));
+    }
+
+
     /// <inheritdoc />
     public async Task SetLedstripPixelsAsync(ReadOnlyMemory<PixelColor> colors, CancellationToken token = default)
     {

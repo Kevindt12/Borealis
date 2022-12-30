@@ -36,6 +36,20 @@ public interface ILedstripConnection
 
 
     /// <summary>
+    /// Sends buffer of frames to the device. Returning a <see cref="int" /> meaning the buffer size that is currently at the device.
+    /// </summary>
+    /// <param name="frames"> The frames that we want to send. </param>
+    /// <param name="token"> A token to cancel the current operation. </param>
+    /// <returns> A <see cref="int" /> indicating the amount pf frames that are currently on the stack. </returns>
+    Task<int> SendFramesBufferAsync(IEnumerable<ReadOnlyMemory<PixelColor>> frames, CancellationToken token = default);
+
+
+    Task StartAnimationAsync(CancellationToken token = default);
+
+    Task StopAnimationAsync(CancellationToken token = default);
+
+
+    /// <summary>
     /// Sets the colors on the ledstrip.
     /// </summary>
     /// <param name="colors"> The colors we want to set. </param>

@@ -12,48 +12,39 @@ public enum PacketIdentifier : byte
     KeepAlive = 0,
 
     /// <summary>
-    /// The Acknowledgement message to indicate that we received a message.
+    /// Starts the animation on a ledstrip.
     /// </summary>
-    /// <remarks>
-    /// Note that the Keep alive and frame message don't send back acknowledgments.
-    /// </remarks>
-    Acknowledge = 1,
+    StartAnimation = 4,
 
     /// <summary>
-    /// The packet we send when we want to send a frame.
+    /// Stops a animation on a ledstrip.
     /// </summary>
-    Frame = 10,
-
-    Start = 6,
-
-    Stop = 7,
-
+    StopAnimation = 5,
 
     /// <summary>
-    /// Indicating that we have a packet with frames for the device to buffer ready to display.
+    /// Sends a single frame to the ledstrip
     /// </summary>
-    Frames = 11,
+    Frame = 7,
 
     /// <summary>
-    /// A packet that wants to indicate that we want to connect.
+    /// Sends a frame buffer to the device.
     /// </summary>
-    Connect = 3,
+    FramesBuffer = 8,
 
     /// <summary>
-    /// Sends the size of the drivers buffer. This so we can or speed up or slow down the packages that we are sending.
+    /// Sends a request from the device to the portal for a frame buffer.
     /// </summary>
-    BufferSize = 8,
-
+    FramesBufferRequest = 9,
 
     /// <summary>
     /// A packet indicating that we want to disconnect.
     /// </summary>
-    Disconnect = 4,
+    Disconnect = 2,
 
     /// <summary>
     /// A configuration message that is used to set the new configuration
     /// </summary>
-    Configuration = 5,
+    Configuration = 15,
 
     /// <summary>
     /// A error message we want to be relayed.

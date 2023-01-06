@@ -1,16 +1,13 @@
 ﻿using System.Net.Sockets;
 
-using Borealis.Drivers.Rpi.Udp.Contexts;
-
 
 
 namespace Borealis.Drivers.Rpi.Udp.Connections;
 
 
-public class TcpClientHandlerFactory
+public class PortalConnectionFactory
 {
     private readonly ILoggerFactory _loggerFactory;
-    private readonly LedstripContext _ledstripContext;
 
 
     /// <summary>
@@ -18,10 +15,9 @@ public class TcpClientHandlerFactory
     /// </summary>
     /// <param name="loggerFactory"> </param>
     /// <param name="ledstripContext"> </param>
-    public TcpClientHandlerFactory(ILoggerFactory loggerFactory, LedstripContext ledstripContext)
+    public PortalConnectionFactory(ILoggerFactory loggerFactory)
     {
         _loggerFactory = loggerFactory;
-        _ledstripContext = ledstripContext;
     }
 
 
@@ -30,8 +26,8 @@ public class TcpClientHandlerFactory
     /// </summary>
     /// <param name="client"> </param>
     /// <returns> </returns>
-    public TcpClientConnection CreateHandler(TcpClient client)
+    public PortalConnection CreateHandler(TcpClient client)
     {
-        return new TcpClientConnection(_loggerFactory.CreateLogger<TcpClientConnection>(), client, _ledstripContext);
+        return new PortalConnection(_loggerFactory.CreateLogger<PortalConnection>(), client);
     }
 }

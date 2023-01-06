@@ -47,14 +47,19 @@ public static class Program
         services.Configure<ServerOptions>(_configuration.GetSection(ServerOptions.Name));
 
         // Factories.
+
         services.AddTransient<LedstripProxyFactory>();
-        services.AddSingleton<TcpClientHandlerFactory>();
-        services.AddSingleton<UdpServerFactory>();
+        services.AddSingleton<PortalConnectionFactory>();
 
         // State
+        services.AddSingleton<ConnectionContext>();
         services.AddSingleton<LedstripContext>();
 
+        // Services
+        services.AddSingleton<VisualService>();
+
         // Hosting
+
         services.AddHostedService<DriverHostedService>();
         services.AddHostedService<ServerHostedService>();
     }

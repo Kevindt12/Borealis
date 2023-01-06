@@ -23,16 +23,12 @@ internal class DeviceConnectionFactory : IDeviceConnectionFactory
     /// <exception cref="NotImplementedException"> When the Connection type selected has not been implemented. </exception>
     public async Task<IDeviceConnection> CreateConnectionAsync(Device device, CancellationToken token = default)
     {
-        return device.ConnectionType switch
-        {
-            ConnectionType.TcpUdp => await CreateCombinedConnection(device, token),
-            _                     => throw new NotImplementedException("The connection type selected was not supported.")
-        };
+        return await CreateCombinedConnection(device, token);
     }
 
 
-    protected virtual async Task<CombinedDeviceConnection> CreateCombinedConnection(Device device, CancellationToken token = default)
+    protected virtual async Task<TcpDeviceConnection> CreateCombinedConnection(Device device, CancellationToken token = default)
     {
-        return await CombinedDeviceConnection.CreateConnectionAsync(_loggerFactory.CreateLogger<CombinedDeviceConnection>(), device, token);
+        return await TcpDeviceConnection.CreateConnectionAsync(_loggerFactory.CreateLogger<TcpDeviceConnection>(), device, token);
     }
 }

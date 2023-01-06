@@ -6,6 +6,12 @@ using Borealis.Domain.Effects;
 namespace Borealis.Domain.Communication.Messages;
 
 
+// Packet 
+// | Ledstrip Index | Color Spectrum | Frame Length | Frame Data |
+// |     1 Byte     |     1 Byte     |     4 Bytes  |  N Bytes   |
+
+
+
 public sealed class FrameMessage : MessageBase
 {
     /// <summary>
@@ -13,15 +19,14 @@ public sealed class FrameMessage : MessageBase
     /// </summary>
     public byte LedstripIndex { get; }
 
-    /// <summary>
-    /// What color spectrum we are using.
-    /// </summary>
-    public ColorSpectrum ColorSpectrum { get; }
+
+    public ColorSpectrum ColorSpectrum { get; set; }
+
 
     /// <summary>
-    /// The colors of the ledstrip.
+    /// The frame that we want to display on the ledstrip.
     /// </summary>
-    public ReadOnlyMemory<PixelColor> Colors { get; }
+    public ReadOnlyMemory<PixelColor> Frame { get; init; }
 
 
     /// <summary>
@@ -29,12 +34,12 @@ public sealed class FrameMessage : MessageBase
     /// </summary>
     /// <param name="ledstripIndex"> The index of the ledstrip. </param>
     /// <param name="colorSpectrum"> </param>
-    /// <param name="colors"> The colors that we want to send. </param>
-    public FrameMessage(byte ledstripIndex, ColorSpectrum colorSpectrum, ReadOnlyMemory<PixelColor> colors)
+    /// <param name="frame"> The colors that we want to send. </param>
+    public FrameMessage(byte ledstripIndex, ColorSpectrum colorSpectrum, ReadOnlyMemory<PixelColor> frame)
     {
         LedstripIndex = ledstripIndex;
         ColorSpectrum = colorSpectrum;
-        Colors = colors;
+        Frame = frame;
     }
 
 
@@ -49,97 +54,35 @@ public sealed class FrameMessage : MessageBase
     /// </exception>
     public static FrameMessage FromBuffer(ReadOnlyMemory<byte> buffer)
     {
-        ReadOnlySpan<byte> data = buffer.Span;
+        // Next, split the serialized bytes into two arrays, one for the LedstripIndex and one for the LedstripFrame
+        byte ledstripIndex = buffer.Span[0];
 
-        // Gets the first part of the frame which is the index and the color spectrum used.
-        byte ledstripIndex = data[0];
-        ColorSpectrum spectrum = (ColorSpectrum)data[1];
+        // Read the ColorSpectrum value from the serializedBytes array
+        ColorSpectrum colorSpectrum = (ColorSpectrum)buffer.Span[1];
 
-        ReadOnlyMemory<PixelColor> colors = spectrum switch
-        {
-            ColorSpectrum.Rgb   => Deserialize3ByteColors(data[2..]),
-            ColorSpectrum.Rgbw  => Deserialize4ByteColors(data[2..]),
-            ColorSpectrum.Rgbww => Deserialize5ByteColors(data[2..]),
-            _                   => throw new ArgumentOutOfRangeException(nameof(spectrum), "The spectrum is not set so cant serialize data.")
-        };
+        int frameLength = BitConverter.ToInt32(buffer[2..5].Span);
 
-        return new FrameMessage(ledstripIndex, spectrum, colors);
-    }
+        ReadOnlyMemory<PixelColor> frame = FrameSerializer.DeserializeFrame(buffer, colorSpectrum, 6, frameLength);
 
-
-    private static ReadOnlyMemory<PixelColor> Deserialize3ByteColors(ReadOnlySpan<byte> data)
-    {
-        PixelColor[] result = new PixelColor[data.Length / 3];
-
-        for (int i = 0; i < data.Length;)
-        {
-            result[i / 3] = new PixelColor(data[i++], data[i++], data[i++]);
-        }
-
-        return result;
-    }
-
-
-    private static ReadOnlyMemory<PixelColor> Deserialize4ByteColors(ReadOnlySpan<byte> data)
-    {
-        PixelColor[] result = new PixelColor[data.Length / 4];
-
-        for (int i = 0; i < data.Length;)
-        {
-            result[i / 3] = new PixelColor(data[i++], data[i++], data[i++], data[i++]);
-        }
-
-        return result;
-    }
-
-
-    private static ReadOnlyMemory<PixelColor> Deserialize5ByteColors(ReadOnlySpan<byte> data)
-    {
-        PixelColor[] result = new PixelColor[data.Length / 5];
-
-        for (int i = 0; i < data.Length;)
-        {
-            result[i / 3] = new PixelColor(data[i++], data[i++], data[i++], data[i++], data[i++]);
-        }
-
-        return result;
+        // Finally, use the ledstripIndex and frame values to construct and return a new FrameMessage object
+        return new FrameMessage(ledstripIndex, colorSpectrum, frame);
     }
 
 
     /// <inheritdoc />
     public override ReadOnlyMemory<Byte> Serialize()
     {
-        // Creating the result based on the spectrum to get the right mount of bytes.
-        // Note that we add 1 for the ledstrip index.
-        byte[] result = new byte[ColorSpectrum switch
-        {
-            ColorSpectrum.Rgb   => 3 * Colors.Length + 2,
-            ColorSpectrum.Rgbw  => 4 * Colors.Length + 2,
-            ColorSpectrum.Rgbww => 5 * Colors.Length + 2,
-            _                   => throw new ArgumentOutOfRangeException(nameof(ColorSpectrum), "Color spectrum unknown.")
-        }];
+        int frameBufferLength = FrameSerializer.CalculateByteLength(ColorSpectrum, Frame.Length);
 
-        // Setting the ledstrip index.
-        result[0] = Convert.ToByte(LedstripIndex);
-        result[1] = Convert.ToByte((byte)ColorSpectrum);
+        byte[] buffer = new Byte[6 + frameBufferLength];
 
-        // Setting all the colors.
-        for (int i = 2,
-                 ci = 0; i < result.Length;)
-        {
-            // The default RGB
-            result[i++] = Colors.Span[ci].R;
-            result[i++] = Colors.Span[ci].G;
-            result[i++] = Colors.Span[ci].B;
+        buffer[0] = LedstripIndex;
+        buffer[1] = (byte)ColorSpectrum;
+        BitConverter.GetBytes(Frame.Length).CopyTo(buffer, 2);
 
-            // If W is added then we add it. same with WW
-            if (ColorSpectrum == ColorSpectrum.Rgbw) result[i++] = Colors.Span[ci].W;
-            if (ColorSpectrum == ColorSpectrum.Rgbww) result[i++] = Colors.Span[ci].WW;
+        FrameSerializer.SerializeFrame(buffer, ColorSpectrum, 6, Frame);
 
-            // Up the color index.
-            ci++;
-        }
-
-        return result;
+        // Finally, return the serialized bytes as a ReadOnlyMemory<byte>
+        return buffer;
     }
 }

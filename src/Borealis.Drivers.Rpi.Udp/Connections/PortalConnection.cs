@@ -3,35 +3,47 @@ using System.Net.Sockets;
 
 using Borealis.Domain.Communication;
 using Borealis.Domain.Communication.Messages;
-using Borealis.Domain.Effects;
-using Borealis.Drivers.Rpi.Udp.Contexts;
 
 
 
 namespace Borealis.Drivers.Rpi.Udp.Connections;
 
 
-public class TcpClientConnection : IDisposable, IAsyncDisposable
+/**
+ * TODO: Add Keep alive to make sure that both connection maintain a connection.
+ * TODO:
+ */
+public class PortalConnection : IDisposable, IAsyncDisposable
 {
-    private readonly ILogger<TcpClientConnection> _logger;
+    private readonly ILogger<PortalConnection> _logger;
     private readonly TcpClient _client;
-    private readonly LedstripContext _ledstripContext;
+
     private readonly NetworkStream _stream;
 
     private readonly CancellationTokenSource? _stoppingToken;
     private readonly Task? _runningTask;
 
-
     /// <summary>
-    /// If the UDP Connection server is running.
+    /// When a frame has a been received.
     /// </summary>
-    public bool IsRunning => _stoppingToken is not null && _runningTask is not null;
+    public event EventHandler<FrameMessage>? FrameReceived;
 
 
     /// <summary>
     /// When a frame has a been received.
     /// </summary>
-    public event EventHandler<FrameMessage>? FrameReceived;
+    public event EventHandler<FramesBufferMessage>? FrameBufferReceived;
+
+    /// <summary>
+    /// Start a animation on a ledstrip.
+    /// </summary>
+    public event EventHandler<StartAnimationMessage>? StartAnimationReceived;
+
+    /// <summary>
+    /// Start a animation on ledstrip.
+    /// </summary>
+    public event EventHandler<StopAnimationMessage>? StopAnimationReceived;
+
 
     /// <summary>
     /// When a disconnection has been requested.
@@ -49,12 +61,11 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
     public virtual EndPoint RemoteEndPoint { get; init; }
 
 
-    public TcpClientConnection(ILogger<TcpClientConnection> logger, TcpClient client, LedstripContext ledstripContext)
+    public PortalConnection(ILogger<PortalConnection> logger, TcpClient client)
     {
         _logger = logger;
         _stream = client.GetStream();
         _client = client;
-        _ledstripContext = ledstripContext;
 
         RemoteEndPoint = client.Client.RemoteEndPoint!;
 
@@ -79,11 +90,38 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
             {
                 try
                 {
+                    int counter = 0;
+
+                    // waiting for 0xCC
+                    while (_stream.ReadByte() != 0xCC)
+                    {
+                        counter++;
+
+                        if (counter > 4)
+                        {
+                            // Have passed the header demimiters for sure so we will throw a exception.
+                            throw new InvalidOperationException("Delimiter of TCP payload invalid.");
+                        }
+                    }
+
+                    // Check if header is now on 0xDD
+                    if (_stream.ReadByte() != 0xDD)
+                    {
+                        throw new InvalidOperationException("Header invalid.");
+                    }
+
+                    // Now we can be sure that we are on the begin of the packet and ready to read the length.
+                    byte[] lengthBuffer = new byte[4];
+                    _stream.Read(lengthBuffer, 0, 4);
+
+                    uint length = BitConverter.ToUInt32(lengthBuffer);
+
+                    await Task.Delay(30);
+
                     // Creating the buffer and reading.
+                    Memory<byte> buffer = new Memory<Byte>(new Byte[length]);
 
-                    Memory<byte> buffer = new Memory<Byte>();
-
-                    int bytesRead = await _stream.ReadAsync(buffer);
+                    int bytesRead = await _stream.ReadAsync(buffer).ConfigureAwait(false);
 
                     // Decoing the packet.
                     CommunicationPacket packet = CommunicationPacket.FromBuffer(buffer);
@@ -101,7 +139,7 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
             }
 
             // Adding a 16 ms delay. It should then run at 60 FPS about that. If we need faster use UDP.
-            await Task.Delay(16);
+            await Task.Delay(10);
         }
 
         _logger.LogTrace($"Stop listening to client : {_client.Client.RemoteEndPoint}.");
@@ -117,32 +155,60 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
     {
         await Task.Run(() => packet.Identifier switch
                    {
-                       PacketIdentifier.KeepAlive     => HandleKeepAliveAsync(packet),
-                       PacketIdentifier.Frame         => HandleFrame(packet),
-                       PacketIdentifier.Frames        => HandleFrames(packet),
-                       PacketIdentifier.Start         => HandleStartFrames(packet),
-                       PacketIdentifier.Stop          => HandleStopAsync(packet),
-                       PacketIdentifier.Disconnect    => HandleDisconnect(packet),
-                       PacketIdentifier.Configuration => HandleConfiguration(packet),
-                       _                              => HandleUnknownPacketAsync(packet)
+                       PacketIdentifier.KeepAlive      => HandleKeepAliveAsync(packet),
+                       PacketIdentifier.Disconnect     => HandleDisconnectAsync(packet),
+                       PacketIdentifier.StartAnimation => HandleStartAnimationAsync(packet),
+                       PacketIdentifier.StopAnimation  => HandleStopAnimationAsync(packet),
+                       PacketIdentifier.Frame          => HandleFrameAsync(packet),
+                       PacketIdentifier.FramesBuffer   => HandleFrameBufferAsync(packet),
+                       PacketIdentifier.Configuration  => HandleConfiguration(packet),
+                       _                               => HandleUnknownPacketAsync(packet)
                    })
                   .ConfigureAwait(false);
     }
 
 
-    private async Task HandleStopAsync(CommunicationPacket packet)
+    protected virtual Task HandleStopAnimationAsync(CommunicationPacket packet)
     {
-        StopMessage message = packet.ReadPayload<StopMessage>()!;
+        _logger.LogTrace("incoming packet request to stop animation.");
 
-        await _ledstripContext.StopAnimationAsync(message.LedstripIndex);
+        StopAnimationMessage message = packet.ReadPayload<StopAnimationMessage>()!;
+
+        StopAnimationReceived?.Invoke(this, message);
+
+        return Task.CompletedTask;
     }
 
 
-    private async Task HandleStartFrames(CommunicationPacket packet)
+    protected virtual async Task HandleKeepAliveAsync(CommunicationPacket packet)
     {
-        StartMessage message = packet.ReadPayload<StartMessage>()!;
+        _logger.LogTrace("incoming packet keep alive.");
 
-        await _ledstripContext.StartAnimationAsync(message.LedstripIndex, message.FrameDelay);
+        await SendAsync(CommunicationPacket.CreateKeepAlive());
+    }
+
+
+    protected virtual Task HandleFrameAsync(CommunicationPacket packet)
+    {
+        _logger.LogTrace("incoming packet frames.");
+
+        FrameMessage message = packet.ReadPayload<FrameMessage>()!;
+
+        FrameReceived?.Invoke(this, message);
+
+        return Task.CompletedTask;
+    }
+
+
+    protected virtual Task HandleStartAnimationAsync(CommunicationPacket packet)
+    {
+        _logger.LogTrace("incoming packet request to start animation.");
+
+        StartAnimationMessage animationMessage = packet.ReadPayload<StartAnimationMessage>()!;
+
+        StartAnimationReceived?.Invoke(this, animationMessage);
+
+        return Task.CompletedTask;
     }
 
 
@@ -151,26 +217,13 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
     /// </summary>
     /// <param name="packet"> The frame packet. </param>
     /// <returns> </returns>
-    protected virtual async Task HandleFrames(CommunicationPacket packet)
+    protected virtual Task HandleFrameBufferAsync(CommunicationPacket packet)
     {
-        FramesMessage message = packet.ReadPayload<FramesMessage>()!;
+        FramesBufferMessage bufferMessage = packet.ReadPayload<FramesBufferMessage>()!;
 
-        foreach (ReadOnlyMemory<PixelColor> frame in message.Frames)
-        {
-            int totalStackSize = _ledstripContext.PushStack(message.LedstripIndex, message.Frames);
+        FrameBufferReceived?.Invoke(this, bufferMessage);
 
-            await SendAsync(CommunicationPacket.CreatePacketFromMessage(new StackSizeMessage(totalStackSize)));
-        }
-    }
-
-
-    /// <summary>
-    /// Handle a keep alive message.
-    /// </summary>
-    /// <returns> </returns>
-    protected virtual async Task HandleKeepAliveAsync(CommunicationPacket packet)
-    {
-        await SendAcknowledgment(CommunicationPacket.CreateKeepAlive());
+        return Task.CompletedTask;
     }
 
 
@@ -180,14 +233,11 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
     /// <param name="packet"> </param>
     /// <param name="remoteEndPoint"> </param>
     /// <returns> </returns>
-    protected virtual async Task HandleDisconnect(CommunicationPacket packet)
+    protected virtual async Task HandleDisconnectAsync(CommunicationPacket packet)
     {
         // Announcing that we are disconnecting.
         _logger.LogTrace("incoming packet to request to disconnect.");
         Disconnect?.Invoke(this, EventArgs.Empty);
-
-        // Sending back that we got the packet.
-        await SendAcknowledgment(packet).ConfigureAwait(false);
 
         // Disposing of the connection.
         await DisposeAsync();
@@ -200,10 +250,11 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
     /// <param name="packet"> </param>
     /// <param name="remoteEndPoint"> </param>
     /// <returns> </returns>
-    protected virtual async Task HandleConfiguration(CommunicationPacket packet)
+    protected virtual Task HandleConfiguration(CommunicationPacket packet)
     {
         ConfigurationReceived?.Invoke(this, ConfigurationMessage.FromBuffer(packet.Payload!.Value));
-        await SendAcknowledgment(packet).ConfigureAwait(false);
+
+        return Task.CompletedTask;
     }
 
 
@@ -216,19 +267,7 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
     protected virtual async Task HandleUnknownPacketAsync(CommunicationPacket packet)
     {
         // _logger.LogError($"Unknown packet received from {remoteEndPoint}");
-        await SendAcknowledgment(packet).ConfigureAwait(false);
-    }
-
-
-    /// <summary>
-    /// Handle a frame message.
-    /// </summary>
-    /// <param name="packet"> The frame packet. </param>
-    /// <returns> </returns>
-    protected virtual async Task HandleFrame(CommunicationPacket packet)
-    {
-        FrameReceived?.Invoke(this, packet.ReadPayload<FrameMessage>());
-        await SendAcknowledgment(packet).ConfigureAwait(false);
+        await SendAsync(CommunicationPacket.CreatePacketFromMessage(new ErrorMessage("Unknown communication packet.")));
     }
 
 
@@ -236,21 +275,14 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
     /// Sends back to the client that we have received the packet that was send.
     /// </summary>
     /// <param name="packet"> The packet that we received. We wil transfer this into a packet to send back. </param>
-    protected virtual async Task SendAcknowledgment(CommunicationPacket packet)
+    public virtual async Task SendAsync(CommunicationPacket packet)
     {
-        await _stream.WriteAsync(packet.GenerateAcknowledgementPacket().CreateBuffer()).ConfigureAwait(false);
-        await _stream.FlushAsync().ConfigureAwait(false);
-    }
+        ReadOnlyMemory<byte> packetBuffer = packet.CreateBuffer();
+        await _stream.WriteAsync(new Byte[] { 0xAA, 0xBB, 0xCC, 0xDD });
+        await _stream.WriteAsync(BitConverter.GetBytes(Convert.ToUInt32(packetBuffer.Length)));
+        await _stream.WriteAsync(packetBuffer);
 
-
-    /// <summary>
-    /// Sends back to the client that we have received the packet that was send.
-    /// </summary>
-    /// <param name="packet"> The packet that we received. We wil transfer this into a packet to send back. </param>
-    protected virtual async Task SendAsync(CommunicationPacket packet)
-    {
-        await _stream.WriteAsync(packet.CreateBuffer()).ConfigureAwait(false);
-        await _stream.FlushAsync().ConfigureAwait(false);
+        await _stream.FlushAsync();
     }
 
 
@@ -303,9 +335,10 @@ public class TcpClientConnection : IDisposable, IAsyncDisposable
             {
                 await _client.Client.DisconnectAsync(true);
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // Ignore don't really care if it does not work.
+                _logger.LogWarning(e, "Exception caught while disposing of the portal connection, exception ignored since we are disposing of it.");
             }
             finally
             {

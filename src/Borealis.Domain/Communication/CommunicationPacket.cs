@@ -26,11 +26,6 @@ public readonly struct CommunicationPacket
     /// </summary>
     public bool IsEmpty => Payload == null;
 
-    /// <summary>
-    /// A flag indicating that this packet is a acknowledgement packet.
-    /// </summary>
-    public bool IsAcknowledgement => Identifier == PacketIdentifier.Acknowledge;
-
 
     /// <summary>
     /// The packet we send to the drivers.
@@ -80,29 +75,16 @@ public readonly struct CommunicationPacket
         {
             Identifier = message switch
             {
-                FrameMessage         => PacketIdentifier.Frame,
-                ConfigurationMessage => PacketIdentifier.Configuration,
-                ErrorMessage         => PacketIdentifier.Error,
-                FramesMessage        => PacketIdentifier.Frames,
-                StackSizeMessage     => PacketIdentifier.BufferSize,
-                StartMessage         => PacketIdentifier.Start,
-                StopMessage          => PacketIdentifier.Stop,
-                _                    => throw new InvalidOperationException("The message has not been implemented.")
+                FrameMessage              => PacketIdentifier.Frame,
+                ConfigurationMessage      => PacketIdentifier.Configuration,
+                ErrorMessage              => PacketIdentifier.Error,
+                FramesBufferMessage       => PacketIdentifier.FramesBuffer,
+                FrameBufferRequestMessage => PacketIdentifier.FramesBufferRequest,
+                StartAnimationMessage     => PacketIdentifier.StartAnimation,
+                StopAnimationMessage      => PacketIdentifier.StopAnimation,
+                _                         => throw new InvalidOperationException("The message has not been implemented.")
             },
             Payload = message.Serialize()
-        };
-    }
-
-
-    /// <summary>
-    /// Creates a connection packet.
-    /// </summary>
-    /// <returns> Returns a instance packet of its self. </returns>
-    public static CommunicationPacket CreateConnectionPacket()
-    {
-        return new CommunicationPacket
-        {
-            Identifier = PacketIdentifier.Connect
         };
     }
 
@@ -116,23 +98,6 @@ public readonly struct CommunicationPacket
         return new CommunicationPacket
         {
             Identifier = PacketIdentifier.Disconnect
-        };
-    }
-
-
-    /// <summary>
-    /// Creates a acknowledgement packet for the other side.
-    /// </summary>
-    /// <returns> A <see cref="CommunicationPacket" /> that is ready to send back. </returns>
-    /// <exception cref="InvalidOperationException"> When the packet is already a acknowledgement packet </exception>
-    public CommunicationPacket GenerateAcknowledgementPacket()
-    {
-        // Making sure we can only make acknowledgement from non acknowledgement packets.
-        if (IsAcknowledgement) throw new InvalidOperationException("This packet is already a Acknowledgement packet.");
-
-        return new CommunicationPacket
-        {
-            Identifier = PacketIdentifier.Acknowledge
         };
     }
 
@@ -156,19 +121,16 @@ public readonly struct CommunicationPacket
     {
         return (Identifier switch
         {
-            PacketIdentifier.KeepAlive     => null,
-            PacketIdentifier.Disconnect    => null,
-            PacketIdentifier.Connect       => null,
-            PacketIdentifier.Error         => ErrorMessage.FromBuffer(Payload!.Value) as TMessageType,
-            PacketIdentifier.Frame         => FrameMessage.FromBuffer(Payload!.Value) as TMessageType,
-            PacketIdentifier.Configuration => ConfigurationMessage.FromBuffer(Payload!.Value) as TMessageType,
-            PacketIdentifier.Frames        => FramesMessage.FromBuffer(Payload!.Value) as TMessageType,
-            PacketIdentifier.BufferSize    => StackSizeMessage.FromBuffer(Payload!.Value) as TMessageType,
-            PacketIdentifier.Start         => StartMessage.FromBuffer(Payload!.Value) as TMessageType,
-            PacketIdentifier.Stop          => StopMessage.FromBuffer(Payload!.Value) as TMessageType,
-
-            PacketIdentifier.Acknowledge => null,
-            _                            => throw new IndexOutOfRangeException("The PacketIdentifier was out of range.")
+            PacketIdentifier.KeepAlive           => null,
+            PacketIdentifier.Disconnect          => null,
+            PacketIdentifier.Error               => ErrorMessage.FromBuffer(Payload!.Value) as TMessageType,
+            PacketIdentifier.Frame               => FrameMessage.FromBuffer(Payload!.Value) as TMessageType,
+            PacketIdentifier.Configuration       => ConfigurationMessage.FromBuffer(Payload!.Value) as TMessageType,
+            PacketIdentifier.FramesBuffer        => FramesBufferMessage.FromBuffer(Payload!.Value) as TMessageType,
+            PacketIdentifier.FramesBufferRequest => FrameBufferRequestMessage.FromBuffer(Payload!.Value) as TMessageType,
+            PacketIdentifier.StartAnimation      => StartAnimationMessage.FromBuffer(Payload!.Value) as TMessageType,
+            PacketIdentifier.StopAnimation       => StopAnimationMessage.FromBuffer(Payload!.Value) as TMessageType,
+            _                                    => throw new IndexOutOfRangeException("The PacketIdentifier was out of range.")
         })!;
     }
 

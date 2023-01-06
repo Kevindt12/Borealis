@@ -6,7 +6,13 @@ using Borealis.Domain.Effects;
 namespace Borealis.Domain.Communication.Messages;
 
 
-public sealed class FramesMessage : MessageBase
+// Packet 
+// | Ledstrip Index | Color Spectrum | Frame Length | Frame Data |
+// |     1 Byte     |     1 Byte     |     4 Bytes  |  N Bytes   |
+
+
+
+public sealed class FramesBufferMessage : MessageBase
 {
     /// <summary>
     /// The ledstrip index of the device.
@@ -21,7 +27,7 @@ public sealed class FramesMessage : MessageBase
     /// <summary>
     /// The colors of the ledstrip.
     /// </summary>
-    public FrameDataCollection Frames { get; }
+    public ReadOnlyMemory<PixelColor>[] Frames { get; }
 
 
     /// <summary>
@@ -30,11 +36,11 @@ public sealed class FramesMessage : MessageBase
     /// <param name="ledstripIndex"> The index of the ledstrip. </param>
     /// <param name="colorSpectrum"> </param>
     /// <param name="colors"> The colors that we want to send. </param>
-    public FramesMessage(byte ledstripIndex, ColorSpectrum colorSpectrum, IEnumerable<FrameData> frames)
+    public FramesBufferMessage(byte ledstripIndex, ColorSpectrum colorSpectrum, IEnumerable<ReadOnlyMemory<PixelColor>> frames)
     {
         LedstripIndex = ledstripIndex;
         ColorSpectrum = colorSpectrum;
-        Frames = new FrameDataCollection(frames);
+        Frames = frames.ToArray();
     }
 
 
@@ -47,89 +53,48 @@ public sealed class FramesMessage : MessageBase
     /// A exception thrown when the
     /// <see cref="ColorSpectrum" /> is not in range.
     /// </exception>
-    public static FramesMessage FromBuffer(ReadOnlyMemory<byte> buffer)
+    public static FramesBufferMessage FromBuffer(ReadOnlyMemory<byte> buffer)
     {
-        ReadOnlySpan<byte> data = buffer.Span;
+        // Next, split the serialized bytes into two arrays, one for the LedstripIndex and one for the LedstripFrames
+        byte ledstripIndex = buffer.Span[0];
+        ColorSpectrum colorSpectrum = (ColorSpectrum)buffer.Span[1];
+        int frameLength = BitConverter.ToInt32(buffer[2..6].Span);
+        ReadOnlyMemory<byte> framesBufferBytes = buffer.Slice(6);
 
-        // Gets the first part of the frame which is the index and the color spectrum used.
-        byte ledstripIndex = data[0];
-        ColorSpectrum spectrum = (ColorSpectrum)data[1];
-        int framesSize = BitConverter.ToInt32(data[2..6]);
-        int framesCount = BitConverter.ToInt32(data[7..10]);
+        int frameCount = framesBufferBytes.Length / FrameSerializer.CalculateByteLength(colorSpectrum, frameLength);
 
-        ReadOnlySpan<byte> framesData = data.Slice(11);
-        FrameDataCollection frames = new FrameDataCollection();
+        // And create a list of LedstripFrame objects from the framesBytes
+        ReadOnlyMemory<PixelColor>[] frames = new ReadOnlyMemory<PixelColor>[frameCount];
 
-        for (int i = 0; i < framesCount; i++)
+        for (int i = 0; i < frameCount; i++)
         {
-            ReadOnlySpan<byte> frameData = data.Slice(i * framesSize, (i + 1) * framesSize);
+            ReadOnlyMemory<PixelColor> frame = FrameSerializer.DeserializeFrame(framesBufferBytes, colorSpectrum, frameLength * i, frameLength);
 
-            FrameData frame = FrameData.FromBuffer(spectrum, frameData.ToArray());
-
-            frames.Add(frame);
+            frames[i] = frame;
         }
 
-        return new FramesMessage(ledstripIndex, spectrum, frames);
-    }
-
-
-    private static ReadOnlyMemory<PixelColor> Deserialize3ByteColors(ReadOnlySpan<byte> data)
-    {
-        PixelColor[] result = new PixelColor[data.Length / 3];
-
-        for (int i = 0; i < data.Length;)
-        {
-            result[i / 3] = new PixelColor(data[i++], data[i++], data[i++]);
-        }
-
-        return result;
-    }
-
-
-    private static ReadOnlyMemory<PixelColor> Deserialize4ByteColors(ReadOnlySpan<byte> data)
-    {
-        PixelColor[] result = new PixelColor[data.Length / 4];
-
-        for (int i = 0; i < data.Length;)
-        {
-            result[i / 3] = new PixelColor(data[i++], data[i++], data[i++], data[i++]);
-        }
-
-        return result;
-    }
-
-
-    private static ReadOnlyMemory<PixelColor> Deserialize5ByteColors(ReadOnlySpan<byte> data)
-    {
-        PixelColor[] result = new PixelColor[data.Length / 5];
-
-        for (int i = 0; i < data.Length;)
-        {
-            result[i / 3] = new PixelColor(data[i++], data[i++], data[i++], data[i++], data[i++]);
-        }
-
-        return result;
+        // Finally, use the ledstripIndex and frame values to construct and return a new FramesBufferMessage object
+        return new FramesBufferMessage(ledstripIndex, colorSpectrum, frames);
     }
 
 
     /// <inheritdoc />
     public override ReadOnlyMemory<Byte> Serialize()
     {
-        // Need 10 bytes for the header.
-        byte[] result = new byte[10 + Frames.Count * Frames.FrameSize];
+        int frameBufferLength = FrameSerializer.CalculateByteLength(ColorSpectrum, Frames.FirstOrDefault().Length);
 
-        // Setting the ledstrip index.
-        result[0] = Convert.ToByte(LedstripIndex);
-        result[1] = Convert.ToByte((byte)ColorSpectrum);
-        BitConverter.GetBytes(Frames.Count).CopyTo(result, 3);
-        BitConverter.GetBytes(Frames.FrameSize).CopyTo(result, 7);
+        byte[] buffer = new Byte[6 + frameBufferLength * Frames.Length];
 
-        for (int frameIndex = 0; frameIndex < Frames.Count; frameIndex++)
+        buffer[0] = LedstripIndex;
+        buffer[1] = (byte)ColorSpectrum;
+        BitConverter.GetBytes(Frames.FirstOrDefault().Length).CopyTo(buffer, 2);
+
+        for (int i = 0; i < Frames.Length; i++)
         {
-            FrameData frame = Frames[frameIndex];
-            frame.CopyTo(result, 10 + Frames.FrameSize * frameIndex);
+            FrameSerializer.SerializeFrame(buffer, ColorSpectrum, i * frameBufferLength + 6, Frames[i]);
         }
 
-        return result;
+        // Finally, return the serialized bytes as a ReadOnlyMemory<byte>
+        return buffer;
     }
 }

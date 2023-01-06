@@ -6,36 +6,36 @@ using Borealis.Domain.Effects;
 namespace Borealis.Domain.Communication.Messages;
 
 
-public class FrameData
+public class LedstripFrame
 {
     public ColorSpectrum ColorSpectrum { get; init; }
 
 
-    public ReadOnlyMemory<PixelColor> Frame { get; init; }
+    public ReadOnlyMemory<PixelColor> Payload { get; init; }
 
 
     public int ByteLength =>
         ColorSpectrum switch
         {
-            ColorSpectrum.Rgb   => Frame.Length * 3,
-            ColorSpectrum.Rgbw  => Frame.Length * 4,
-            ColorSpectrum.Rgbww => Frame.Length * 5,
+            ColorSpectrum.Rgb   => Payload.Length * 3,
+            ColorSpectrum.Rgbw  => Payload.Length * 4,
+            ColorSpectrum.Rgbww => Payload.Length * 5,
             _                   => throw new ArgumentOutOfRangeException(nameof(ColorSpectrum))
         };
 
 
-    public FrameData(ReadOnlyMemory<PixelColor> frame, ColorSpectrum spectrum)
+    public LedstripFrame(ReadOnlyMemory<PixelColor> payload, ColorSpectrum spectrum)
     {
-        Frame = frame;
+        Payload = payload;
         ColorSpectrum = spectrum;
     }
 
 
-    private FrameData(ReadOnlyMemory<byte> buffer, ColorSpectrum spectrum)
+    private LedstripFrame(ReadOnlyMemory<byte> buffer, ColorSpectrum spectrum)
     {
         ColorSpectrum = spectrum;
 
-        Frame = spectrum switch
+        Payload = spectrum switch
         {
             ColorSpectrum.Rgb   => Deserialize3Byte(buffer.Span),
             ColorSpectrum.Rgbw  => Deserialize4Byte(buffer.Span),
@@ -45,9 +45,9 @@ public class FrameData
     }
 
 
-    public static FrameData FromBuffer(ColorSpectrum colorSpectrum, ReadOnlyMemory<byte> buffer)
+    public static LedstripFrame FromBuffer(ColorSpectrum colorSpectrum, ReadOnlyMemory<byte> buffer)
     {
-        return new FrameData(buffer, colorSpectrum);
+        return new LedstripFrame(buffer, colorSpectrum);
     }
 
 
@@ -97,13 +97,13 @@ public class FrameData
                  ci = 0; i < startIndex + ByteLength;)
         {
             // The default RGB
-            buffer.Span[i++] = Frame.Span[ci].R;
-            buffer.Span[i++] = Frame.Span[ci].G;
-            buffer.Span[i++] = Frame.Span[ci].B;
+            buffer.Span[i++] = Payload.Span[ci].R;
+            buffer.Span[i++] = Payload.Span[ci].G;
+            buffer.Span[i++] = Payload.Span[ci].B;
 
             // If W is added then we add it. same with WW
-            if (ColorSpectrum == ColorSpectrum.Rgbw) buffer.Span[i++] = Frame.Span[ci].W;
-            if (ColorSpectrum == ColorSpectrum.Rgbww) buffer.Span[i++] = Frame.Span[ci].WW;
+            if (ColorSpectrum == ColorSpectrum.Rgbw) buffer.Span[i++] = Payload.Span[ci].W;
+            if (ColorSpectrum == ColorSpectrum.Rgbww) buffer.Span[i++] = Payload.Span[ci].WW;
 
             // Up the color index.
             ci++;

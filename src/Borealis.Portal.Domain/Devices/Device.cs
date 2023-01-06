@@ -96,12 +96,6 @@ public class Device : IEquatable<Device>
     }
 
 
-    /// <summary>
-    /// The type of connection we will be using to connect with this driver.
-    /// </summary>
-    public ConnectionType ConnectionType { get; set; }
-
-
     public Device() { }
 
 

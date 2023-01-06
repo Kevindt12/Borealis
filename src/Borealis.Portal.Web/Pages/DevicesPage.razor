@@ -77,7 +77,6 @@
 
                         <MudStack Row="true" Justify="Justify.SpaceBetween">
                             <MudText Class="pa-1" Typo="Typo.subtitle2">Connection</MudText>
-                            <MudText Class="pa-1" Typo="Typo.subtitle2">@(device.ConnectionType.ToString())</MudText>
                         </MudStack>
 
                         @*The divider. *@
@@ -169,20 +168,7 @@
                              RequiredError="A port needs to be specified."
                              @bind-Value="@_port" />
         </MudStack>
-
-        @* TODO: Add Auto Connect*@
-
-
-        <MudSelect T="ConnectionType"
-                   Label="Connection Type"
-                   Class="pa-2"
-                   Variant="Variant.Outlined"
-                   FullWidth="true"
-                   @bind-Value="_connectionType">
-            <MudSelectItem T="ConnectionType" Value="ConnectionType.TcpUdp">Udp + Tcp</MudSelectItem>
-            <MudSelectItem T="ConnectionType" Value="ConnectionType.TcpOnly">Tcp Only</MudSelectItem>
-
-        </MudSelect>
+        
 
     </DialogContent>
 
@@ -220,7 +206,6 @@
     private string _deviceName = default!;
     private string _ipAddress = default!;
     private int _port = default!;
-    private ConnectionType _connectionType;
     private Device? _selectedDevice;
 
     private IMask _ipv4Mask = RegexMask.IPv4();
@@ -262,7 +247,6 @@
         _deviceName = device.Name;
         _ipAddress = device.EndPoint.Address.ToString();
         _port = device.EndPoint.Port;
-        _connectionType = device.ConnectionType;
 
         // Make sure that the dialog is in edit mode.
         _editMode = true;
@@ -297,7 +281,6 @@
         _deviceName = string.Empty;
         _ipAddress = String.Empty;
         _port = 0;
-        _connectionType = ConnectionType.TcpUdp;
     }
 
     /// <summary>
@@ -436,10 +419,7 @@
                 device = _deviceFactory.CreateDevice(name, endpoint);
             }
 
-            // Setting the connection type.
-            device.ConnectionType = _connectionType;
-
-            // Saving the device.
+    // Saving the device.
             _logger.LogDebug("Validated device input saving the device.");
             await _deviceManager.SaveDeviceAsync(device);
 

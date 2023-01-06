@@ -3,6 +3,7 @@
 using Borealis.Domain.Communication.Messages;
 using Borealis.Drivers.Rpi.Udp.Connections;
 using Borealis.Drivers.Rpi.Udp.Contexts;
+using Borealis.Drivers.Rpi.Udp.Ledstrips;
 using Borealis.Drivers.Rpi.Udp.Options;
 
 using Microsoft.Extensions.Options;
@@ -15,31 +16,31 @@ namespace Borealis.Drivers.Rpi.Udp.Services;
 public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
 {
     private readonly ILogger<ServerHostedService> _logger;
-    private readonly UdpServerFactory _udpServerFactory;
-    private readonly TcpClientHandlerFactory _tcpClientHandlerFactory;
+    private readonly ConnectionContext _connectionContext;
+    private readonly VisualService _visualService;
+    private readonly PortalConnectionFactory _portalConnectionFactory;
     private readonly ServerOptions _serverOptions;
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
     private readonly LedstripContext _ledstripContext;
 
-    private UdpServer _udpServer = default!;
     private readonly TcpListener _tcpServer;
-
-    private TcpClientConnection? _currentTcpClientConnection;
 
     private CancellationTokenSource _stoppingToken;
 
 
     public ServerHostedService(ILogger<ServerHostedService> logger,
                                IOptions<ServerOptions> serverOptions,
-                               UdpServerFactory udpServerFactory,
-                               TcpClientHandlerFactory tcpClientHandlerFactory,
+                               ConnectionContext connectionContext,
+                               VisualService visualService,
+                               PortalConnectionFactory portalConnectionFactory,
                                IHostApplicationLifetime hostApplicationLifetime,
                                LedstripContext ledstripContext
     )
     {
         _logger = logger;
-        _udpServerFactory = udpServerFactory;
-        _tcpClientHandlerFactory = tcpClientHandlerFactory;
+        _connectionContext = connectionContext;
+        _visualService = visualService;
+        _portalConnectionFactory = portalConnectionFactory;
         _serverOptions = serverOptions.Value;
         _hostApplicationLifetime = hostApplicationLifetime;
         _ledstripContext = ledstripContext;
@@ -51,65 +52,15 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
     /// <inheritdoc />
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Starting the UDP server for clients.");
-        await StartUdpServerAsync(cancellationToken);
-
         _logger.LogInformation("Starting the tcp server.");
         await StartTcpServer(cancellationToken);
     }
 
 
-    protected virtual async Task StartUdpServerAsync(CancellationToken token)
-    {
-        try
-        {
-            // Getting the port.
-            int port = _serverOptions.ServerPort + 1;
-
-            // Creating the server.
-            _logger.LogInformation($"Starting UDP Server on port {port}.");
-            _udpServer = _udpServerFactory.CreateUdpServer(port);
-
-            // Setting up the server.
-            _udpServer.FrameReceived += HandlerOnFrameReceived;
-
-            // starting the server.
-            await _udpServer.StartAsync(token);
-            _logger.LogInformation("Server has started.");
-        }
-        catch (InvalidOperationException invalidOperationException)
-        {
-            _logger.LogWarning(invalidOperationException, "The Udp server is already running.");
-        }
-        catch (OperationCanceledException operationCanceledException)
-        {
-            _logger.LogError(operationCanceledException, "Starting server cancelled.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "There was a error with starting the UDP client.");
-
-            throw;
-        }
-    }
-
-
-    protected virtual async Task StartWaitingForConnection(CancellationToken stoppingToken)
-    {
-        // Getting the client that once to connect.
-        _logger.LogDebug($"Starting to listen on : {_tcpServer.LocalEndpoint}.");
-
-        // Loop until we want to cancel.
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            TcpClient client = await _tcpServer.AcceptTcpClientAsync(stoppingToken).ConfigureAwait(false);
-            _logger.LogDebug($"Client connection from : {client.Client.RemoteEndPoint}.");
-
-            await SetNewConnectionAsync(client, stoppingToken);
-        }
-    }
-
-
+    /// <summary>
+    /// Starts the TCP server to listen on the port specified in the appsettigns.js.
+    /// </summary>
+    /// <param name="token"> A token to cancel the current operation. </param>
     protected virtual async Task StartTcpServer(CancellationToken token)
     {
         // Starting the tcp server.
@@ -119,44 +70,134 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
         // Not looping we only want to have a single connection.
         _logger.LogInformation("TCP Server started. Listening for a client.");
         _stoppingToken = new CancellationTokenSource();
-        _ = Task.Run(async () => await StartWaitingForConnection(_stoppingToken.Token), token);
+        _ = Task.Run(async () => await StartWaitingForConnection(_stoppingToken.Token).ConfigureAwait(false), token);
     }
 
 
-    private async Task SetNewConnectionAsync(TcpClient client, CancellationToken token = default)
+    /// <summary>
+    /// The method that handles waiting for the connection and accepting it from the TCP server.
+    /// </summary>
+    /// <param name="stoppingToken"> A token to cancel the current operation. </param>
+    protected virtual async Task StartWaitingForConnection(CancellationToken stoppingToken)
     {
-        // Checking if the client is already the one connected.
-        if (_currentTcpClientConnection?.RemoteEndPoint == client.Client.RemoteEndPoint)
+        // Getting the client that once to connect.
+        _logger.LogDebug($"On task waiting for the connection : {_tcpServer.LocalEndpoint}.");
+
+        try
         {
-            _logger.LogWarning("Received a new connection request from a server that is already connected.");
+            // Loop until we want to cancel.
+            TcpClient client = await _tcpServer.AcceptTcpClientAsync(stoppingToken).ConfigureAwait(false);
+            _logger.LogInformation($"Client connection from : {client.Client.RemoteEndPoint}.");
 
-            return;
+            // Setting the new connection and thereby also
+            await SetPortalConnectionConnectionAsync(client, stoppingToken).ConfigureAwait(false);
         }
+        catch (OperationCanceledException canceledException)
+        {
+            _logger.LogError(canceledException, "Cancelling waiting for TCP connection.");
+        }
+    }
 
+
+    /// <summary>
+    /// setting the portal connection that we got from the TCP Server.
+    /// </summary>
+    /// <param name="client"> The TCP client that we received. </param>
+    /// <param name="token"> A token to cancel the current operation. </param>
+    private async Task SetPortalConnectionConnectionAsync(TcpClient client, CancellationToken token = default)
+    {
         _logger.LogDebug("New connection {client} has connected.", client);
-
-        // Checking if we already have a existing connection.
-        if (_currentTcpClientConnection != null)
-        {
-            _logger.LogDebug("Disposing of connection with {endpoint}.", _currentTcpClientConnection.RemoteEndPoint);
-            await _currentTcpClientConnection.DisposeAsync();
-            _currentTcpClientConnection = null;
-        }
 
         // Handling the current incoming connection.
         _logger.LogDebug("Creating the handler for the connection.");
-        TcpClientConnection connection = _tcpClientHandlerFactory.CreateHandler(client);
-        _currentTcpClientConnection = connection;
-        _logger.LogDebug("Connection has been established.");
+        PortalConnection connection = _portalConnectionFactory.CreateHandler(client);
 
-        connection.FrameReceived += HandlerOnFrameReceived;
-        connection.Disconnect += OnServerDisconnection;
-        connection.ConfigurationReceived += OnConfigurationReceived;
+        // Setting the portal connection.
+        _connectionContext.Connection = connection;
+        _logger.LogDebug("Connection has been established and configured.");
+
+        // Setup the events for the animation handlers
+        _logger.LogTrace("Setting the event handlers.");
+
+        // Setting the connection events.
+        connection.StartAnimationReceived += HandleStartAnimationReceived;
+        connection.StopAnimationReceived += HandleStopAnimationReceived;
+        connection.FrameReceived += HandlerFrameReceived;
+        connection.FrameBufferReceived += HandleFrameBufferReceived;
+        connection.Disconnect += HandleServerDisconnection;
+        connection.ConfigurationReceived += HandleConfigurationReceived;
     }
 
 
-    private void OnConfigurationReceived(Object? sender, ConfigurationMessage e)
+    /// <summary>
+    /// Handles the connection request to start playing the animation on the ledstrip.
+    /// </summary>
+    private async void HandleStartAnimationReceived(Object? sender, StartAnimationMessage e)
     {
+        _logger.LogInformation($"Starting animation on ledstrip {e.LedstripIndex} at speed {e.Frequency.Hertz} Hertz.");
+
+        // Getting the ledstrip.
+        LedstripProxyBase ledstrip = _ledstripContext[e.LedstripIndex];
+
+        // Clearing the ledstrip.
+        await _visualService.StartAnimationAsync(ledstrip, e.Frequency, e.InitialFrameBuffer);
+    }
+
+
+    /// <summary>
+    /// Handles the connection requesting to display a single frame.
+    /// </summary>
+    private async void HandlerFrameReceived(Object? sender, FrameMessage message)
+    {
+        _logger.LogInformation("displaying a frame for a single ledstrip.");
+
+        // Getting the ledstrip.
+        LedstripProxyBase ledstrip = _ledstripContext[message.LedstripIndex];
+
+        // Clearing the ledstrip.
+        await _visualService.DisplayFrameAsync(ledstrip, message.Frame);
+    }
+
+
+    /// <summary>
+    /// Handles the connection request to stop playing an animation or clear the ledstrip.
+    /// </summary>
+    private async void HandleStopAnimationReceived(Object? sender, StopAnimationMessage e)
+    {
+        _logger.LogInformation($"Stopping animation on ledstrip {e.LedstripIndex}");
+
+        // Getting the ledstrip.
+        LedstripProxyBase ledstrip = _ledstripContext[e.LedstripIndex];
+
+        // Clearing the ledstrip.
+        await _visualService.ClearLedstripAsync(ledstrip);
+    }
+
+
+    /// <summary>
+    /// Handles the connection sending us a frame buffer.
+    /// </summary>
+    private void HandleFrameBufferReceived(Object? sender, FramesBufferMessage e)
+    {
+        _logger.LogInformation($"Handling frame buffer received for {e.LedstripIndex}, {e.Frames.Length} frames received.");
+
+        // Getting the ledstrip.
+        LedstripProxyBase ledstrip = _ledstripContext[e.LedstripIndex];
+
+        // Clearing the ledstrip.
+        _visualService.ProcessIncomingFrameBuffer(ledstrip, e.Frames);
+    }
+
+
+    /// <summary>
+    /// Handles a new configuration gotten from the protal.
+    /// </summary>
+    /// <param name="sender"> </param>
+    /// <param name="e"> </param>
+    private void HandleConfigurationReceived(Object? sender, ConfigurationMessage e)
+    {
+        throw new NotImplementedException();
+
         // Set the configuration and restart.
         try
         {
@@ -169,7 +210,10 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
     }
 
 
-    private async void OnServerDisconnection(Object? sender, EventArgs e)
+    /// <summary>
+    /// Handles when the portal requests to disconnect.
+    /// </summary>
+    private async void HandleServerDisconnection(Object? sender, EventArgs e)
     {
         // Stopping the current ledstrip context and making sure all ledstrips are clear.
         _logger.LogInformation("Disconnection request came in. Clearing all ledstrips.");
@@ -177,8 +221,11 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
 
         // Disposing of the connection.
         _logger.LogDebug("Disposing the tcp client connection.");
-        await _currentTcpClientConnection!.DisposeAsync();
-        _currentTcpClientConnection = null;
+        await _connectionContext.DisconnectPortalAsync();
+
+        // Starts a new connection.
+        _logger.LogInformation("Start waiting for a new connection again,");
+        await StartWaitingForConnection(CancellationToken.None);
     }
 
 
@@ -189,9 +236,6 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
         {
             _logger.LogInformation("Stopping TCP Server");
             _stoppingToken?.Cancel();
-
-            _logger.LogInformation("Stopping the UDP Server.");
-            await _udpServer.StopAsync(cancellationToken);
         }
         catch (InvalidOperationException invalidOperationException)
         {
@@ -201,29 +245,14 @@ public class ServerHostedService : IHostedService, IDisposable, IAsyncDisposable
     }
 
 
-    /// <summary>
-    /// When the server has received a package.
-    /// </summary>
-    /// <param name="sender"> </param>
-    /// <param name="e"> </param>
-    private void HandlerOnFrameReceived(Object? sender, FrameMessage message)
-    {
-        _ledstripContext[message.LedstripIndex].SetColors(message.Colors);
-    }
-
-
     /// <inheritdoc />
     /// <inheritdoc />
     public void Dispose()
     {
         _stoppingToken?.Dispose();
-        _udpServer?.Dispose();
     }
 
 
     /// <inheritdoc />
-    public async ValueTask DisposeAsync()
-    {
-        if (_udpServer.IsRunning) { }
-    }
+    public async ValueTask DisposeAsync() { }
 }

@@ -79,7 +79,7 @@ internal class LedstripService : ILedstripService
         }
 
         // Clear the ledstrip.
-        await connection.SetLedstripPixelsAsync(Enumerable.Repeat((PixelColor)Color.Black, ledstrip.Length).ToArray());
+        await connection.SetSingleFrameAsync(Enumerable.Repeat((PixelColor)Color.Black, ledstrip.Length).ToArray());
     }
 
 
@@ -97,7 +97,7 @@ internal class LedstripService : ILedstripService
         ILedstripConnection connection = _deviceContext.LedstripConnections.SingleOrDefault(c => c.Ledstrip == ledstrip) ?? throw new DeviceException("Device is not connected.");
 
         // Setting the ledstrip color.
-        await connection.SetLedstripPixelsAsync(Enumerable.Repeat(color, ledstrip.Length).ToArray(), token);
+        await connection.SetSingleFrameAsync(Enumerable.Repeat(color, ledstrip.Length).ToArray(), token);
     }
 
 

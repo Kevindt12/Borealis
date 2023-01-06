@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 
 using Borealis.Domain.Animations;
@@ -24,7 +25,7 @@ internal class AnimationPlayer : IAnimationPlayer
 
     private EffectEngine _effectEngine;
 
-    public int AimedStackSize { get; set; } = 100;
+    public int InitialStackSize { get; set; } = 400;
 
 
     public virtual Animation Animation { get; }
@@ -33,7 +34,7 @@ internal class AnimationPlayer : IAnimationPlayer
     public virtual ILedstripConnection Ledstrip { get; }
 
     /// <inheritdoc />
-    public virtual Boolean IsRunning => _task != null && _stoppingToken != null;
+    public virtual Boolean IsRunning { get; protected set; }
 
 
     public AnimationPlayer(ILogger<AnimationPlayer> logger, Animation animation, EffectEngine engine, ILedstripConnection ledstrip)
@@ -42,22 +43,17 @@ internal class AnimationPlayer : IAnimationPlayer
         Animation = animation;
         Ledstrip = ledstrip;
 
+        ledstrip.FramesRequested += LedstripOnFramesRequested;
+
         _effectEngine = engine;
     }
 
 
-    /// <summary>
-    /// Starts the underlying task that starts the animation.
-    /// </summary>
-    /// <param name="token"> A token to cancel the current operation. </param>
-    /// <returns> </returns>
-    protected virtual async Task StartTaskAsync(CancellationToken token = default)
+    private async void LedstripOnFramesRequested(Object? sender, FramesRequestedEventArgs e)
     {
-        if (_task != null) throw new InvalidOperationException("Cannot start task on a task that is already start or still waiting to be ended.");
+        _logger.LogTrace($"Sending {e.Amount} of frames to ledstrip {Ledstrip.Ledstrip.Name}");
 
-        _logger.LogTrace($"Starting Looping task for {Animation.Id}.");
-        _stoppingToken = new CancellationTokenSource();
-        _task = await Task.Factory.StartNew(TaskStartAsync, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        await Ledstrip.SendFramesBufferAsync(await BuildFramesPackage(e.Amount));
     }
 
 
@@ -68,46 +64,32 @@ internal class AnimationPlayer : IAnimationPlayer
     /// <returns> </returns>
     public virtual async Task StopAsync(CancellationToken token = default)
     {
-        if (_task == null) throw new InvalidOperationException("The animation has not been started and the task is not initialized.");
+        if (!IsRunning) throw new InvalidOperationException("The animation has not been started and the task is not initialized.");
 
-        _logger.LogTrace($"Stopping animation player {Animation.Id}");
-        _stoppingToken!.Cancel();
+        await Ledstrip.StopAnimationAsync(token);
 
-        try
-        {
-            _logger.LogTrace("Stopping task and awaiting for it.");
-            await _task.ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Error task in cleanup for animation player.");
-        }
-        finally
-        {
-            // Clean up the task.
-            _stoppingToken.Dispose();
-            _stoppingToken = null;
-            _task = null;
-        }
+        IsRunning = false;
     }
 
 
     /// <inheritdoc />
     public virtual async Task StartAsync(CancellationToken token = default)
     {
+        if (IsRunning) throw new InvalidOperationException("Cannot start task on a task that is already start or still waiting to be ended.");
         token.ThrowIfCancellationRequested();
         _logger.LogTrace($"Starting animation player for animation {Animation.Id}.");
 
         try
         {
+            IsRunning = true;
             _logger.LogTrace($"Running setup of animation {Animation.Id}.");
             await _effectEngine.RunSetupAsync(token).ConfigureAwait(false);
 
-            _logger.LogTrace("Sending the first frames for to full the buffer.");
-            await Ledstrip.SendFramesBufferAsync(await BuildFramesPackage(AimedStackSize), token);
+            _logger.LogTrace("Building the Initial Frame buffer.");
+            IEnumerable<ReadOnlyMemory<PixelColor>> frameBuffer = await BuildFramesPackage(InitialStackSize);
 
-            _logger.LogTrace("The start task ");
-            await StartTaskAsync(token).ConfigureAwait(false);
+            _logger.LogTrace("The start animation on device ");
+            await Ledstrip.StartAnimationAsync(Animation.Frequency, frameBuffer, token).ConfigureAwait(false);
         }
         catch (OperationCanceledException operationCanceledException)
         {
@@ -122,41 +104,19 @@ internal class AnimationPlayer : IAnimationPlayer
     }
 
 
-    private async Task TaskStartAsync()
-    {
-        _logger.LogTrace("Starting the new task and telling the ledstrip that we are starting.");
-        await Ledstrip.StartAnimationAsync();
-
-        // Checking the stopping token if we need to stop.
-        while (!_stoppingToken!.Token.IsCancellationRequested)
-        {
-            // Sends the current frames to the device.
-            int framesCount = await Ledstrip.SendFramesBufferAsync(await BuildFramesPackage(AimedStackSize), _stoppingToken!.Token);
-
-            if (framesCount < AimedStackSize)
-            {
-                continue;
-            }
-
-            framesCount = AimedStackSize - framesCount;
-
-            int totalWaitTime = (int)(1000 / Animation.Frequency.PerSecond) * framesCount;
-            await Task.Delay(totalWaitTime);
-        }
-
-        _logger.LogTrace("Telling the device that we are stopping the animation.");
-        await Ledstrip.StopAnimationAsync();
-    }
-
-
     private async Task<IEnumerable<ReadOnlyMemory<PixelColor>>> BuildFramesPackage(int framesCount)
     {
         List<ReadOnlyMemory<PixelColor>> result = new List<ReadOnlyMemory<PixelColor>>();
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         for (int i = 0; i < framesCount; i++)
         {
             result.Add(await _effectEngine.RunLoopAsync().ConfigureAwait(false));
         }
+
+        stopwatch.Stop();
+
+        _logger.LogTrace($"New frame package build in {stopwatch.Elapsed} for {framesCount} frames.");
 
         return result;
     }

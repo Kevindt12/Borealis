@@ -1,13 +1,11 @@
 ﻿using System;
-
-using FluentValidation;
-
 using System.Linq;
 using System.Text.Json;
 
 using Borealis.Domain.Devices;
 using Borealis.Drivers.Rpi.Udp.Contexts;
-using Borealis.Drivers.Rpi.Udp.Validation;
+
+using FluentValidation;
 
 
 
@@ -20,20 +18,17 @@ public class DriverHostedService : IHostedService
     private readonly IConfiguration _configuration;
 
     private readonly LedstripContext _ledstripContext;
-    private readonly LedstripSettingsValidator _ledstripSettingsValidator;
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
 
 
     public DriverHostedService(ILogger<DriverHostedService> logger,
                                LedstripContext ledstripContext,
-                               LedstripSettingsValidator ledstripSettingsValidator,
                                IHostApplicationLifetime hostApplicationLifetime,
                                IConfiguration configuration
     )
     {
         _logger = logger;
         _ledstripContext = ledstripContext;
-        _ledstripSettingsValidator = ledstripSettingsValidator;
         _hostApplicationLifetime = hostApplicationLifetime;
         _configuration = configuration;
     }
@@ -59,9 +54,6 @@ public class DriverHostedService : IHostedService
             // Deserializing the Json
             LedstripSettings settings = JsonSerializer.Deserialize<LedstripSettings>(json)!;
             _logger.LogInformation("Json has been successfully parsed.");
-
-            _logger.LogInformation("Validating settings");
-            await _ledstripSettingsValidator.ValidateAndThrowAsync(settings, cancellationToken);
 
             _logger.LogInformation("Loading all ledstrips.");
             _ledstripContext.SetConfiguration(settings);

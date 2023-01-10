@@ -12,6 +12,12 @@ namespace Borealis.Drivers.Rpi.Udp.Ledstrips;
 
 public abstract class LedstripProxyBase : IDisposable
 {
+    /// <summary>
+    /// The Id of this connection.
+    /// </summary>
+    public Guid Id { get; set; } = Guid.NewGuid();
+
+
     // ReSharper disable once MemberCanBeProtected.Global
     /// <summary>
     /// The ledstrip settings that we base the proxy of.

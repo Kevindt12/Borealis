@@ -5,15 +5,15 @@
 namespace Borealis.Portal.Domain.Exceptions;
 
 
-public class InvalidDeviceConfigurationException : InvalidOperationException
+public class InvalidDeviceConfigurationException : ApplicationException
 {
-	public Device? Device { get; set; }
+    public Device? Device { get; set; }
 
 
-	/// <inheritdoc />
-	public InvalidDeviceConfigurationException(String? message, Exception? innerException) : base(message, innerException) { }
+    /// <inheritdoc />
+    public InvalidDeviceConfigurationException(String? message, Exception? innerException) : base(message, innerException) { }
 
 
-	/// <inheritdoc />
-	public InvalidDeviceConfigurationException(String? message) : base(message) { }
+    /// <inheritdoc />
+    public InvalidDeviceConfigurationException(String? message) : base(message) { }
 }

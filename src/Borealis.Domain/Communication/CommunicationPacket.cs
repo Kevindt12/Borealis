@@ -26,6 +26,11 @@ public readonly struct CommunicationPacket
     /// </summary>
     public bool IsEmpty => Payload == null;
 
+    /// <summary>
+    /// Checks if the packet is a acknowledgement packet.
+    /// </summary>
+    public bool IsAcknowledgement => Identifier == PacketIdentifier.Acknowledgement;
+
 
     /// <summary>
     /// The packet we send to the drivers.
@@ -64,6 +69,20 @@ public readonly struct CommunicationPacket
 
 
     /// <summary>
+    /// Creates an acknowledgement packet that is used to tell the sending device that a process has been completed.
+    /// </summary>
+    /// <returns> </returns>
+    public static CommunicationPacket CreateAcknowledgementPacket()
+    {
+        return new CommunicationPacket
+        {
+            Identifier = PacketIdentifier.Acknowledgement,
+            Payload = null
+        };
+    }
+
+
+    /// <summary>
     /// Creates a packet from a message.
     /// </summary>
     /// <param name="message"> The message we want to send. </param>
@@ -75,14 +94,23 @@ public readonly struct CommunicationPacket
         {
             Identifier = message switch
             {
+                // Connection
+                ConnectMessage   => PacketIdentifier.Connect,
+                ConnectedMessage => PacketIdentifier.Connected,
+
+                // Frames
                 FrameMessage              => PacketIdentifier.Frame,
-                ConfigurationMessage      => PacketIdentifier.Configuration,
-                ErrorMessage              => PacketIdentifier.Error,
                 FramesBufferMessage       => PacketIdentifier.FramesBuffer,
                 FrameBufferRequestMessage => PacketIdentifier.FramesBufferRequest,
-                StartAnimationMessage     => PacketIdentifier.StartAnimation,
-                StopAnimationMessage      => PacketIdentifier.StopAnimation,
-                _                         => throw new InvalidOperationException("The message has not been implemented.")
+
+                // Animations
+                StartAnimationMessage => PacketIdentifier.StartAnimation,
+                StopAnimationMessage  => PacketIdentifier.StopAnimation,
+
+                // Configuration and error handling.
+                ConfigurationMessage => PacketIdentifier.Configuration,
+                ErrorMessage         => PacketIdentifier.Error,
+                _                    => throw new InvalidOperationException("The message has not been implemented.")
             },
             Payload = message.Serialize()
         };

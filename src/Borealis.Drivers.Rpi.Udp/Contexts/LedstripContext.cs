@@ -10,7 +10,7 @@ using Borealis.Drivers.Rpi.Udp.Ledstrips;
 namespace Borealis.Drivers.Rpi.Udp.Contexts;
 
 
-public class LedstripContext : IDisposable
+public sealed class LedstripContext : IDisposable
 {
     private readonly ILogger<LedstripContext> _logger;
     private readonly LedstripProxyFactory _ledstripProxyFactory;
@@ -21,9 +21,12 @@ public class LedstripContext : IDisposable
     /// <summary>
     /// Getting a Ledstrip proxy by the index in the configuration.
     /// </summary>
-    /// <param name="index"> </param>
+    /// <param name="index"> The of the ledstrip proxy we want to get. </param>
     /// <returns> </returns>
-    public LedstripProxyBase this[int index] => _ledstrips[index];
+    public LedstripProxyBase this[byte index] => _ledstrips[index];
+
+
+    public int Count => _ledstrips.Count;
 
 
     /// <summary>
@@ -38,9 +41,9 @@ public class LedstripContext : IDisposable
 
 
     /// <summary>
-    /// Reset the configuration.
+    /// Sets the ledstrip configuration that was given.
     /// </summary>
-    /// <param name="configuration"> </param>
+    /// <param name="configuration"> The configuration that was given. </param>
     public void SetConfiguration(LedstripSettings configuration)
     {
         // If there are any ledstrips running then clean them up.
@@ -51,6 +54,8 @@ public class LedstripContext : IDisposable
         }
 
         _logger.LogDebug("Loading ledstrips.");
+
+        List<Exception> exceptions = new List<Exception>();
 
         foreach (Ledstrip ledstrip in configuration.Ledstrips)
         {
@@ -63,11 +68,15 @@ public class LedstripContext : IDisposable
             {
                 // Handle unable to connect
                 _logger.LogError(ledstripConnectionException, "Unable to create ledstrip proxy.");
+
+                exceptions.Add(ledstripConnectionException);
             }
             catch (InvalidLedstripSettingsException invalidLedstripSettingsException)
             {
                 // Handle invalid configuration,
                 _logger.LogError(invalidLedstripSettingsException, "The ledstrip configuration was not valid.");
+
+                exceptions.Add(invalidLedstripSettingsException);
             }
             catch (NotImplementedException notImplementedException)
             {
@@ -75,16 +84,29 @@ public class LedstripContext : IDisposable
                 _logger.LogError(notImplementedException, "The selected ledstrip with the current settings have not been implemented.");
             }
         }
+
+        if (exceptions.Any())
+        {
+            throw new AggregateException(exceptions);
+        }
     }
 
 
+    /// <summary>
+    /// Gets the index of the ledstrip by the given <see cref="LedstripProxyBase" />.
+    /// </summary>
+    /// <param name="ledstripProxy"> The <see cref="LedstripProxyBase" /> that we want to index of. </param>
+    /// <returns> The <see cref="byte" /> index of the ledstrip. </returns>
     public byte IndexOf(LedstripProxyBase ledstripProxy)
     {
         return Convert.ToByte(_ledstrips.IndexOf(ledstripProxy));
     }
 
 
-    public virtual void ClearAllLedstrips()
+    /// <summary>
+    /// Clears all the ledstrips that we are managing.
+    /// </summary>
+    public void ClearAllLedstrips()
     {
         foreach (LedstripProxyBase proxy in _ledstrips)
         {

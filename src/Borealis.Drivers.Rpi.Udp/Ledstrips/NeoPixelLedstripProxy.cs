@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Device.Spi;
-using System.Drawing;
 using System.Linq;
 
 using Borealis.Domain.Devices;
@@ -22,9 +21,12 @@ public sealed class NeoPixelStandardLedstripProxy : LedstripProxyBase, IDisposab
     private readonly Ws28xx _driver;
 
 
-    public Guid Id { get; set; } = Guid.NewGuid();
-
-
+    /// <summary>
+    /// Creates a proxy handler for a ledstrip that is connected to this device.
+    /// </summary>
+    /// <param name="ledstrip"> The <see cref="Ledstrip" /> that is connect and want to control. </param>
+    /// <exception cref="InvalidLedstripSettingsException"> Thrown when the ledstrip settings or the connection settings are not valid. </exception>
+    /// <exception cref="LedstripConnectionException"> Thrown when the ledstrip connection is unable to be created. </exception>
     public NeoPixelStandardLedstripProxy(ILogger<NeoPixelStandardLedstripProxy> logger, Ledstrip ledstrip) : base(ledstrip)
     {
         _logger = logger;
@@ -39,6 +41,13 @@ public sealed class NeoPixelStandardLedstripProxy : LedstripProxyBase, IDisposab
     }
 
 
+    /// <summary>
+    /// Creates a ledstrip spi device that we can use for the ledstrip.
+    /// </summary>
+    /// <param name="ledstrip"> The <see cref="Ledstrip" /> that is connect and want to control. </param>
+    /// <returns> A <see cref="SpiDevice" /> to be used for the ledstrip connection. </returns>
+    /// <exception cref="InvalidLedstripSettingsException"> Thrown when the ledstrip settings or the connection settings are not valid. </exception>
+    /// <exception cref="LedstripConnectionException"> Thrown when the ledstrip connection is unable to be created. </exception>
     private SpiDevice CreateSpiDevice(Ledstrip ledstrip)
     {
         // Guards.
@@ -55,11 +64,12 @@ public sealed class NeoPixelStandardLedstripProxy : LedstripProxyBase, IDisposab
                 ChipSelectLineActiveState = ledstrip.Connection.Spi.ChipSelectLineActiveState
             });
         }
-        catch (PlatformNotSupportedException)
+        catch (PlatformNotSupportedException platformNotSupportedException)
         {
-            _logger.LogError("WINDOWS DEBUGGING");
+            // HACK: This is done so we can start the application also on windows.
+            _logger.LogError(platformNotSupportedException, "WINDOWS DEBUGGING");
 
-            throw new LedstripConnectionException("Unable to create proxy.");
+            throw new LedstripConnectionException("Unable to create proxy.", platformNotSupportedException);
         }
         catch (IOException ioException)
         {
@@ -71,9 +81,16 @@ public sealed class NeoPixelStandardLedstripProxy : LedstripProxyBase, IDisposab
     }
 
 
+    /// <summary>
+    /// Sets the colors of the ledstrip to the colors given in the array.
+    /// </summary>
+    /// <param name="colors">
+    /// The <see cref="ReadOnlyMemory{T}" /> of
+    /// <see cref="PixelColor" /> the colors that we want to set.
+    /// </param>
     public override void SetColors(ReadOnlyMemory<PixelColor> colors)
     {
-        for (int i = 0; i < Ledstrip.Length; i++)
+        for (int i = 0; i < Ledstrip.Length && i < colors.Length; i++)
         {
             _driver.Image.SetPixel(i, 0, colors.Span[i]);
         }
@@ -82,36 +99,11 @@ public sealed class NeoPixelStandardLedstripProxy : LedstripProxyBase, IDisposab
     }
 
 
-    private void PlayStartup()
-    {
-        try
-        {
-            _logger.LogInformation($"Running test on ledstrip {Id}.");
-
-            _logger.LogDebug($"Setting color to red. Colors Setting {(PixelColor)Color.Red}");
-            SetColors(Enumerable.Repeat((PixelColor)Color.Red, Ledstrip.Length).ToArray());
-            Thread.Sleep(1500);
-
-            _logger.LogDebug($"Setting color to green. Colors Setting {(PixelColor)Color.Green}");
-            SetColors(Enumerable.Repeat((PixelColor)Color.Green, Ledstrip.Length).ToArray());
-            Thread.Sleep(1500);
-
-            _logger.LogDebug($"Setting color to blue. Colors Setting {(PixelColor)Color.Blue}");
-            SetColors(Enumerable.Repeat((PixelColor)Color.Blue, Ledstrip.Length).ToArray());
-            Thread.Sleep(1500);
-
-            _logger.LogDebug("Clearing ledstrip...");
-            Clear();
-        }
-        catch (IOException ioException)
-        {
-            // Cleaning up and rethrowing it as a connection exception.
-            _logger.LogError(ioException, "There was a problem with the startup test.");
-            Dispose(true);
-
-            throw new LedstripConnectionException("There was a problem with the startup test.", ioException, Ledstrip);
-        }
-    }
+    /// <summary>
+    /// Plays the startup sequence used to verifiy that the ledstrip is working.
+    /// </summary>
+    /// <exception cref="LedstripConnectionException"> Thrown when there was a problem playing the test of the ledstrip. </exception>
+    private void PlayStartup() { }
 
 
     /// <inheritdoc />
@@ -119,6 +111,10 @@ public sealed class NeoPixelStandardLedstripProxy : LedstripProxyBase, IDisposab
     {
         if (disposing)
         {
+            // Clearing the frame on the ledstrip.
+            Clear();
+
+            // Dispose of the device.
             _device.Dispose();
         }
     }

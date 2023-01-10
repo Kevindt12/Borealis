@@ -1,10 +1,10 @@
 using System;
-
-using FluentValidation;
-
 using System.Linq;
-using System.Reflection;
 
+using Borealis.Drivers.Rpi.Udp.Animations;
+using Borealis.Drivers.Rpi.Udp.Commands;
+using Borealis.Drivers.Rpi.Udp.Commands.Actions;
+using Borealis.Drivers.Rpi.Udp.Commands.Handlers;
 using Borealis.Drivers.Rpi.Udp.Connections;
 using Borealis.Drivers.Rpi.Udp.Contexts;
 using Borealis.Drivers.Rpi.Udp.Ledstrips;
@@ -40,27 +40,34 @@ public static class Program
     private static void ConfigureServices(IServiceCollection services)
     {
         // Middleware
-        services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly(), ServiceLifetime.Transient);
         services.AddOptions();
 
         // Configuration
         services.Configure<ServerOptions>(_configuration.GetSection(ServerOptions.Name));
+        services.Configure<AnimationOptions>(_configuration.GetSection(AnimationOptions.Name));
 
         // Factories.
-
         services.AddTransient<LedstripProxyFactory>();
-        services.AddSingleton<PortalConnectionFactory>();
+        services.AddTransient<PortalConnectionFactory>();
+        services.AddTransient<AnimationPlayerFactory>();
+
+        // Services
+        services.AddTransient<SettingsService>();
 
         // State
         services.AddSingleton<ConnectionContext>();
         services.AddSingleton<LedstripContext>();
+        services.AddSingleton<DisplayContext>();
 
-        // Services
-        services.AddSingleton<VisualService>();
+        // Handlers
+        services.AddTransient<IQueryHandler<RequestFrameBufferCommand, FrameBufferQuery>, RequestFrameBufferQueryHandler>();
+        services.AddTransient<IQueryHandler<ConnectCommand, ConnectedQuery>, ConnectQueryHandler>();
+        services.AddTransient<ICommandHandler<SetFrameCommand>, SetFrameCommandHandler>();
+        services.AddTransient<ICommandHandler<StartAnimationCommand>, StartAnimationCommandHandler>();
+        services.AddTransient<ICommandHandler<StopAnimationCommand>, StopAnimationCommandHandler>();
+        services.AddTransient<ICommandHandler<ConfigurationCommand>, SetConfigurationCommandHandler>();
 
         // Hosting
-
-        services.AddHostedService<DriverHostedService>();
         services.AddHostedService<ServerHostedService>();
     }
 

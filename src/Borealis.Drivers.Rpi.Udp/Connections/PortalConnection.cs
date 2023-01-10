@@ -1,59 +1,58 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 using Borealis.Domain.Communication;
 using Borealis.Domain.Communication.Messages;
+using Borealis.Domain.Effects;
+using Borealis.Drivers.Rpi.Udp.Commands;
+using Borealis.Drivers.Rpi.Udp.Commands.Actions;
+using Borealis.Drivers.Rpi.Udp.Exceptions;
+using Borealis.Shared.Extensions;
+
+using Overby.Extensions.AsyncBinaryReaderWriter;
 
 
 
 namespace Borealis.Drivers.Rpi.Udp.Connections;
 
 
-/**
- * TODO: Add Keep alive to make sure that both connection maintain a connection.
- * TODO:
- */
 public class PortalConnection : IDisposable, IAsyncDisposable
 {
-    private readonly ILogger<PortalConnection> _logger;
-    private readonly TcpClient _client;
+    private static readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
 
+    // Dependencies.
+    private readonly ILogger<PortalConnection> _logger;
+
+    // Networking.
+    private readonly TcpClient _client;
+    private readonly IQueryHandler<ConnectCommand, ConnectedQuery> _connectHandler;
+    private readonly ICommandHandler<SetFrameCommand> _setFrameHandler;
+    private readonly ICommandHandler<StartAnimationCommand> _startAnimationHandler;
+    private readonly ICommandHandler<StopAnimationCommand> _stopAnimationHandler;
+    private readonly ICommandHandler<ConfigurationCommand> _configurationHandler;
     private readonly NetworkStream _stream;
 
+    // Readers writers.
+    private readonly AsyncBinaryReader _reader;
+    private readonly AsyncBinaryWriter _writer;
+
+    // Reading.
     private readonly CancellationTokenSource? _stoppingToken;
-    private readonly Task? _runningTask;
+    private readonly Task? _readingTask;
+
+    private bool _writing;
+
+    // Keep alive.
+    private DateTime _lastKeepAliveMessage;
+    private readonly Timer _keepCheckAliveTimer;
+    private const int KeepAliveCheckSeconds = 680;
 
     /// <summary>
-    /// When a frame has a been received.
+    /// A event indicating that we are disconnecting from the portal.
     /// </summary>
-    public event EventHandler<FrameMessage>? FrameReceived;
+    public event EventHandler? Disconnecting;
 
-
-    /// <summary>
-    /// When a frame has a been received.
-    /// </summary>
-    public event EventHandler<FramesBufferMessage>? FrameBufferReceived;
-
-    /// <summary>
-    /// Start a animation on a ledstrip.
-    /// </summary>
-    public event EventHandler<StartAnimationMessage>? StartAnimationReceived;
-
-    /// <summary>
-    /// Start a animation on ledstrip.
-    /// </summary>
-    public event EventHandler<StopAnimationMessage>? StopAnimationReceived;
-
-
-    /// <summary>
-    /// When a disconnection has been requested.
-    /// </summary>
-    public event EventHandler? Disconnect;
-
-    /// <summary>
-    /// When a configuration has been received.
-    /// </summary>
-    public event EventHandler<ConfigurationMessage>? ConfigurationReceived;
 
     /// <summary>
     /// The remote endpoint of the server we are now connected with.
@@ -61,19 +60,148 @@ public class PortalConnection : IDisposable, IAsyncDisposable
     public virtual EndPoint RemoteEndPoint { get; init; }
 
 
-    public PortalConnection(ILogger<PortalConnection> logger, TcpClient client)
+    public PortalConnection(ILogger<PortalConnection> logger,
+                            TcpClient client,
+                            IQueryHandler<ConnectCommand, ConnectedQuery> connectHandler,
+                            ICommandHandler<SetFrameCommand> setFrameHandler,
+                            ICommandHandler<StartAnimationCommand> startAnimationHandler,
+                            ICommandHandler<StopAnimationCommand> stopAnimationHandler,
+                            ICommandHandler<ConfigurationCommand> configurationHandler
+    )
     {
         _logger = logger;
-        _stream = client.GetStream();
+
+        // Networking.
         _client = client;
+        _connectHandler = connectHandler;
+        _setFrameHandler = setFrameHandler;
+        _startAnimationHandler = startAnimationHandler;
+        _stopAnimationHandler = stopAnimationHandler;
+        _configurationHandler = configurationHandler;
+        _stream = client.GetStream();
 
         RemoteEndPoint = client.Client.RemoteEndPoint!;
 
-        // Starting the listening task.\
+        // Streaming
+        _reader = new AsyncBinaryReader(_stream, Encoding.Default, true);
+        _writer = new AsyncBinaryWriter(_stream, Encoding.Default, true);
+
+        // Starting the listening task.
         _stoppingToken = new CancellationTokenSource();
-        _runningTask = Task.Run(RunningTaskLoop);
+        _readingTask = Task.Factory.StartNew(RunningTaskLoop, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        // Timer that checks if we are still connected with the device.
+        _keepCheckAliveTimer = new Timer(state => CheckKeepAliveAsync(), null, TimeSpan.FromSeconds(KeepAliveCheckSeconds), TimeSpan.FromSeconds(KeepAliveCheckSeconds));
     }
 
+
+    /// <summary>
+    /// Checks the keep alive timer. This will be invoked ever so often and checked if the keep alive is still valid.
+    /// </summary>
+    /// <returns> </returns>
+    private void CheckKeepAliveAsync()
+    {
+        // Checking the last keep alive message.
+        if (_lastKeepAliveMessage.AddSeconds(KeepAliveCheckSeconds) < DateTime.Now)
+        {
+            // If we have passed the timer then we will 
+            _logger.LogError("Portal connection has not send a keep alive message.");
+
+            // Telling the application that we are not connected anymore.
+            Disconnecting?.Invoke(this, EventArgs.Empty);
+
+            // Cleaning up this object.
+            Dispose();
+        }
+    }
+
+
+    /// <summary>
+    /// Sending request to get more frames for the frame buffer of a animation player.
+    /// </summary>
+    /// <param name="ledstripIndex"> The ledstrip index that we want to get the buffer for. </param>
+    /// <param name="amount"> The amount of frames that we want to receive from the portal. </param>
+    public virtual async Task<ReadOnlyMemory<PixelColor>[]> SendRequestForFrameBuffer(byte ledstripIndex, int amount)
+    {
+        await _lock.WaitAsync(_stoppingToken!.Token).ConfigureAwait(false);
+        _writing = true;
+
+        try
+        {
+            CommunicationPacket requestPacket = CommunicationPacket.CreatePacketFromMessage(new FrameBufferRequestMessage(amount, ledstripIndex));
+
+            // Sending the request to the portal. Also handles the ack from the portal.
+            _logger.LogTrace("Sending request for the frame buffer.");
+            await SendAsyncCore(requestPacket).ConfigureAwait(false);
+
+            // Reading the packet that we received.
+            _logger.LogTrace("Waiting for a response packet from the portal.");
+            CommunicationPacket responsePacket = await ReadAsyncCore(_stoppingToken!.Token).ConfigureAwait(false);
+
+            if (responsePacket.Identifier == PacketIdentifier.FramesBuffer)
+            {
+                // Returning the received frame buffer.
+                _logger.LogTrace("Response message received start decoding.");
+                FramesBufferMessage message = responsePacket.ReadPayload<FramesBufferMessage>()!;
+
+                // Telling the application that we are not writing anymore.
+                _writing = false;
+
+                await SendAcknowledgementPacketAsync().ConfigureAwait(false);
+
+                // Returning the frames that we got.
+                return message.Frames;
+            }
+            else if (requestPacket.Identifier == PacketIdentifier.Error)
+            {
+                // Hamding that we got a error from the protal.
+                _logger.LogTrace("Error received from te client. Start decoding the error message.");
+                ErrorMessage message = responsePacket.ReadPayload<ErrorMessage>()!;
+
+                // Telling the application that we are not writing anymore.
+                _writing = false;
+
+                // Throw the exception that something has happend on the portal.
+                throw new PortalException($"There was a problem with picking up the frame buffer for ledstrip {ledstripIndex}.", message.Exception);
+            }
+            else
+            {
+                // Handling that we have a unknown packet.
+                _logger.LogTrace($"Unknown packet received from the portal of length {responsePacket.Payload?.Length ?? 0}");
+                ErrorMessage message = new ErrorMessage("Unknown packet received.");
+
+                // Send to the device that we got a error with a unknown packet.
+                await SendAsyncCore(CommunicationPacket.CreatePacketFromMessage(message)).ConfigureAwait(false);
+
+                // Telling the application that we are not writing anymore.
+                _writing = false;
+
+                // Throwing an exception saying that we could not process the message.
+                throw new PortalConnectionException("Unknown packet received from the portal.");
+            }
+        }
+        catch (SocketException e)
+        {
+            _logger.LogError(e, "Connection error while trying to process the frame buffer.");
+
+            // Telling the application that we are disconnecting.
+            Disconnecting?.Invoke(this, EventArgs.Empty);
+
+            // Cleaning the object up.
+            await DisposeAsync();
+
+            // Throwing a exception saying taht we had a connection error.
+            throw new PortalConnectionException("The portal had a connection problem.", e);
+        }
+
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+
+    #region Reading
 
     /// <summary>
     /// The running task loop.
@@ -86,59 +214,58 @@ public class PortalConnection : IDisposable, IAsyncDisposable
         // Looping till we get data.
         while (!_stoppingToken!.Token.IsCancellationRequested)
         {
-            if (_stream.DataAvailable)
+            if (_stream.DataAvailable && _writing == false)
             {
+                await _lock.WaitAsync(_stoppingToken!.Token).ConfigureAwait(false);
+
                 try
                 {
-                    int counter = 0;
+                    // Getting the packet that we received.
+                    CommunicationPacket packet = await ReadAsyncCore(_stoppingToken.Token).ConfigureAwait(false);
 
-                    // waiting for 0xCC
-                    while (_stream.ReadByte() != 0xCC)
-                    {
-                        counter++;
-
-                        if (counter > 4)
-                        {
-                            // Have passed the header demimiters for sure so we will throw a exception.
-                            throw new InvalidOperationException("Delimiter of TCP payload invalid.");
-                        }
-                    }
-
-                    // Check if header is now on 0xDD
-                    if (_stream.ReadByte() != 0xDD)
-                    {
-                        throw new InvalidOperationException("Header invalid.");
-                    }
-
-                    // Now we can be sure that we are on the begin of the packet and ready to read the length.
-                    byte[] lengthBuffer = new byte[4];
-                    _stream.Read(lengthBuffer, 0, 4);
-
-                    uint length = BitConverter.ToUInt32(lengthBuffer);
-
-                    await Task.Delay(30);
-
-                    // Creating the buffer and reading.
-                    Memory<byte> buffer = new Memory<Byte>(new Byte[length]);
-
-                    int bytesRead = await _stream.ReadAsync(buffer).ConfigureAwait(false);
-
-                    // Decoing the packet.
-                    CommunicationPacket packet = CommunicationPacket.FromBuffer(buffer);
-                    await HandleIncomingPacket(packet).ConfigureAwait(false);
+                    // Handling the incoming packet.
+                    await HandleIncomingPacket(packet, _stoppingToken.Token).ConfigureAwait(false);
+                }
+                catch (ApplicationException applicationException)
+                {
+                    _logger.LogWarning(applicationException, "Error while processing request.");
                 }
                 catch (SocketException socketException)
                 {
                     _logger.LogError(socketException, "Socket exception.");
-                    Disconnect?.Invoke(this, EventArgs.Empty);
+
+                    // Telling the application that we are disconnecting.
+                    Disconnecting?.Invoke(this, EventArgs.Empty);
+
+                    // Cleaning up and stopping the loop.
+                    await DisposeAsync().ConfigureAwait(false);
+
+                    // Stopping the loop.
+                    break;
                 }
                 catch (IOException e)
                 {
                     _logger.LogError(e, "Error with reading data from the tcp server.");
+
+                    // Telling the application that we are disconnecting.
+                    Disconnecting?.Invoke(this, EventArgs.Empty);
+
+                    // Cleaning up and stopping the loop.
+                    await DisposeAsync().ConfigureAwait(false);
+
+                    break;
+                }
+                catch (OperationCanceledException operationCanceledException)
+                {
+                    _logger.LogWarning(operationCanceledException, "A opearion was cancelled by the portal.");
+                }
+                finally
+                {
+                    _lock.Release();
                 }
             }
 
-            // Adding a 16 ms delay. It should then run at 60 FPS about that. If we need faster use UDP.
+            // Adding a 10 ms delay when checking.
             await Task.Delay(10);
         }
 
@@ -146,145 +273,293 @@ public class PortalConnection : IDisposable, IAsyncDisposable
     }
 
 
-    /// <summary>
     /// Handles a incoming packet.
     /// </summary>
     /// <param name="packet"> The <see cref="CommunicationPacket" /> that we received. </param>
+    /// <param name="stoppingTokenToken"> </param>
     /// <param name="remoteEndPoint"> The <see cref="IPEndPoint" /> from the remote device. </param>
-    protected virtual async Task HandleIncomingPacket(CommunicationPacket packet)
-    {
-        await Task.Run(() => packet.Identifier switch
-                   {
-                       PacketIdentifier.KeepAlive      => HandleKeepAliveAsync(packet),
-                       PacketIdentifier.Disconnect     => HandleDisconnectAsync(packet),
-                       PacketIdentifier.StartAnimation => HandleStartAnimationAsync(packet),
-                       PacketIdentifier.StopAnimation  => HandleStopAnimationAsync(packet),
-                       PacketIdentifier.Frame          => HandleFrameAsync(packet),
-                       PacketIdentifier.FramesBuffer   => HandleFrameBufferAsync(packet),
-                       PacketIdentifier.Configuration  => HandleConfiguration(packet),
-                       _                               => HandleUnknownPacketAsync(packet)
-                   })
-                  .ConfigureAwait(false);
-    }
+    protected virtual Task HandleIncomingPacket(CommunicationPacket packet, CancellationToken token) =>
+        packet.Identifier switch
+        {
+            PacketIdentifier.KeepAlive      => HandleKeepAliveAsync(packet, token),
+            PacketIdentifier.Connect        => HandleConnectAsync(packet, token),
+            PacketIdentifier.Disconnect     => HandleDisconnectAsync(packet, token),
+            PacketIdentifier.StartAnimation => HandleStartAnimationAsync(packet, token),
+            PacketIdentifier.StopAnimation  => HandleStopAnimationAsync(packet, token),
+            PacketIdentifier.Frame          => HandleFrameAsync(packet, token),
+            PacketIdentifier.Configuration  => HandleConfiguration(packet, token),
+            _                               => HandleUnknownPacketAsync(packet, token)
+        };
 
 
-    protected virtual Task HandleStopAnimationAsync(CommunicationPacket packet)
-    {
-        _logger.LogTrace("incoming packet request to stop animation.");
+    /// <summary>
 
-        StopAnimationMessage message = packet.ReadPayload<StopAnimationMessage>()!;
-
-        StopAnimationReceived?.Invoke(this, message);
-
-        return Task.CompletedTask;
-    }
+    #endregion
 
 
-    protected virtual async Task HandleKeepAliveAsync(CommunicationPacket packet)
+    #region Receive Handlers
+
+    protected virtual async Task HandleKeepAliveAsync(CommunicationPacket packet, CancellationToken token)
     {
         _logger.LogTrace("incoming packet keep alive.");
 
-        await SendAsync(CommunicationPacket.CreateKeepAlive());
+        // Setting the date time that we last received a packet from.
+        _lastKeepAliveMessage = DateTime.Now;
+
+        // Sending the keep alive back to the portal.
+        await SendAsyncCore(CommunicationPacket.CreateKeepAlive(), token).ConfigureAwait(false);
     }
 
 
-    protected virtual Task HandleFrameAsync(CommunicationPacket packet)
+    protected virtual async Task HandleConnectAsync(CommunicationPacket packet, CancellationToken token)
     {
-        _logger.LogTrace("incoming packet frames.");
+        _logger.LogTrace("Handling connection request from portal.");
+        ConnectMessage message = packet.ReadPayload<ConnectMessage>()!;
+        ConnectedQuery result = default!;
 
+        try
+        {
+            result = await _connectHandler.Execute(new ConnectCommand
+                                           {
+                                               ConfigurationConcurrencyToken = message.ConfigurationConcurrencyToken,
+                                               RemoteConnection = RemoteEndPoint
+                                           })
+                                          .ConfigureAwait(false);
+        }
+        catch (ApplicationException e)
+        {
+            _logger.LogError(e, "Sending to the portal that we have a problem the connection request.");
+            await SendAsyncCore(CommunicationPacket.CreatePacketFromMessage(new ErrorMessage(e)), token).ConfigureAwait(false);
+
+            throw;
+        }
+        catch (IOException e)
+        {
+            _logger.LogError(e, "Sending to portal that we have a problem processing the connection request.");
+            await SendAsyncCore(CommunicationPacket.CreatePacketFromMessage(new ErrorMessage(e)), token).ConfigureAwait(false);
+
+            throw;
+        }
+
+        // Creating the reply packet.
+        _logger.LogTrace("Creating reply packet for the portal.");
+        ConnectedMessage replyMessage = new ConnectedMessage(result.IsConfigurationValid);
+        CommunicationPacket replyPacket = CommunicationPacket.CreatePacketFromMessage(replyMessage);
+
+        _logger.LogTrace("Sending the reply packet to the portal.");
+        await SendAsyncCore(replyPacket, token).ConfigureAwait(false);
+
+        _logger.LogTrace("Waiting for the acknowledgement from the protal.");
+        CommunicationPacket acknowledgementPacket = await ReadAsyncCore(token).ConfigureAwait(false);
+
+        if (acknowledgementPacket.IsAcknowledgement)
+        {
+            // Handle the acknowledgement of the packet.
+            _logger.LogTrace("Acknowledgement received.");
+        }
+        else if (acknowledgementPacket.Identifier == PacketIdentifier.Error)
+        {
+            // Handle portal error.
+            ErrorMessage errorMessage = acknowledgementPacket.ReadPayload<ErrorMessage>()!;
+
+            throw new PortalException("There was a problem with creating the connection between the portal and the driver.", errorMessage.Exception);
+        }
+        else
+        {
+            // handle unknown or unexpected packet.
+            throw new PortalConnectionException($"Unexpected packet received, of type {acknowledgementPacket.Identifier}.") { Data = { { "Packet", acknowledgementPacket } } };
+        }
+    }
+
+
+    protected virtual async Task HandleDisconnectAsync(CommunicationPacket packet, CancellationToken token)
+    {
+        _logger.LogTrace("Handling the disconnection of the portal.");
+
+        // Telling the portal that we where successful.
+        await SendAcknowledgementPacketAsync(token).ConfigureAwait(false);
+    }
+
+
+    protected virtual async Task HandleStartAnimationAsync(CommunicationPacket packet, CancellationToken token)
+    {
+        StartAnimationMessage message = packet.ReadPayload<StartAnimationMessage>()!;
+
+        try
+        {
+            // Execute the handler.
+            _logger.LogTrace($"Request to start animation on ledstrip {message.LedstripIndex}, at frequency {message.Frequency.Hertz} Hz with initial frame buffer of {message.InitialFrameBuffer.Count()}");
+
+            // Execute the command.
+            await _startAnimationHandler.ExecuteAsync(new StartAnimationCommand
+                                         {
+                                             LedstripIndex = message.LedstripIndex,
+                                             Frequency = message.Frequency,
+                                             InitialFrameBuffer = message.InitialFrameBuffer.ToArray()
+                                         })
+                                        .ConfigureAwait(false);
+
+            _logger.LogTrace("Animation handler has started.");
+
+            // Telling the portal that we where successful.
+            await SendAcknowledgementPacketAsync(token).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException e)
+        {
+            // Handles a already active ledstrip error.
+            _logger.LogError(e, "Error while starting animation. Sending the error back to the portal.");
+            await SendAsyncCore(CommunicationPacket.CreatePacketFromMessage(new ErrorMessage(e)), token).ConfigureAwait(false);
+        }
+    }
+
+
+    protected virtual async Task HandleStopAnimationAsync(CommunicationPacket packet, CancellationToken token)
+    {
+        StopAnimationMessage message = packet.ReadPayload<StopAnimationMessage>()!;
+
+        // Execute the handler.
+        _logger.LogTrace($"Request to stop the animation on ledstrip {message.LedstripIndex}.");
+
+        await _stopAnimationHandler.ExecuteAsync(new StopAnimationCommand
+                                    {
+                                        LedstripIndex = message.LedstripIndex
+                                    })
+                                   .ConfigureAwait(false);
+
+        // Telling the portal that we where successful.
+        await SendAcknowledgementPacketAsync(token).ConfigureAwait(false);
+    }
+
+
+    protected virtual async Task HandleFrameAsync(CommunicationPacket packet, CancellationToken token)
+    {
+        // Reading the payload of the message.
         FrameMessage message = packet.ReadPayload<FrameMessage>()!;
 
-        FrameReceived?.Invoke(this, message);
+        // Execute the handler.
+        _logger.LogTrace($"Request to set single frame on {message.LedstripIndex}");
 
-        return Task.CompletedTask;
+        await _setFrameHandler.ExecuteAsync(new SetFrameCommand
+                               {
+                                   LedstripIndex = message.LedstripIndex,
+                                   Frame = message.Frame
+                               })
+                              .ConfigureAwait(false);
+
+        // Telling the portal that we where successful.
+        await SendAcknowledgementPacketAsync(token).ConfigureAwait(false);
     }
 
 
-    protected virtual Task HandleStartAnimationAsync(CommunicationPacket packet)
+    protected virtual async Task HandleConfiguration(CommunicationPacket packet, CancellationToken token)
     {
-        _logger.LogTrace("incoming packet request to start animation.");
+        ConfigurationMessage message = packet.ReadPayload<ConfigurationMessage>()!;
 
-        StartAnimationMessage animationMessage = packet.ReadPayload<StartAnimationMessage>()!;
+        try
+        {
+            // Execute the handler.
+            _logger.LogTrace($"Handling incoming configuration message {message.Settings.LogToJson()}");
 
-        StartAnimationReceived?.Invoke(this, animationMessage);
+            await _configurationHandler.ExecuteAsync(new ConfigurationCommand
+                                        {
+                                            LedstripSettings = message.Settings
+                                        })
+                                       .ConfigureAwait(false);
 
-        return Task.CompletedTask;
+            // Telling the portal that we where successful.
+            await SendAcknowledgementPacketAsync(token).ConfigureAwait(false);
+        }
+        catch (ApplicationException e)
+        {
+            // Telling the portal that we failed the operation.
+            _logger.LogError(e, "Error while handling frame buffer. Sending the error back to the portal.");
+            await SendAsyncCore(CommunicationPacket.CreatePacketFromMessage(new ErrorMessage(e)), token).ConfigureAwait(false);
+        }
     }
 
 
-    /// <summary>
-    /// Handle a frame message.
-    /// </summary>
-    /// <param name="packet"> The frame packet. </param>
-    /// <returns> </returns>
-    protected virtual Task HandleFrameBufferAsync(CommunicationPacket packet)
-    {
-        FramesBufferMessage bufferMessage = packet.ReadPayload<FramesBufferMessage>()!;
-
-        FrameBufferReceived?.Invoke(this, bufferMessage);
-
-        return Task.CompletedTask;
-    }
-
-
-    /// <summary>
-    /// Handle a keep alive message.
-    /// </summary>
-    /// <param name="packet"> </param>
-    /// <param name="remoteEndPoint"> </param>
-    /// <returns> </returns>
-    protected virtual async Task HandleDisconnectAsync(CommunicationPacket packet)
-    {
-        // Announcing that we are disconnecting.
-        _logger.LogTrace("incoming packet to request to disconnect.");
-        Disconnect?.Invoke(this, EventArgs.Empty);
-
-        // Disposing of the connection.
-        await DisposeAsync();
-    }
-
-
-    /// <summary>
-    /// Handle a keep alive message.
-    /// </summary>
-    /// <param name="packet"> </param>
-    /// <param name="remoteEndPoint"> </param>
-    /// <returns> </returns>
-    protected virtual Task HandleConfiguration(CommunicationPacket packet)
-    {
-        ConfigurationReceived?.Invoke(this, ConfigurationMessage.FromBuffer(packet.Payload!.Value));
-
-        return Task.CompletedTask;
-    }
-
-
-    /// <summary>
-    /// A unknown packet that has been received.
-    /// </summary>
-    /// <param name="packet"> </param>
-    /// <param name="remoteEndPoint"> </param>
-    /// <returns> </returns>
-    protected virtual async Task HandleUnknownPacketAsync(CommunicationPacket packet)
+    protected virtual async Task HandleUnknownPacketAsync(CommunicationPacket packet, CancellationToken token)
     {
         // _logger.LogError($"Unknown packet received from {remoteEndPoint}");
-        await SendAsync(CommunicationPacket.CreatePacketFromMessage(new ErrorMessage("Unknown communication packet.")));
+        await SendAsyncCore(CommunicationPacket.CreatePacketFromMessage(new ErrorMessage("Unknown communication packet.")), token);
+    }
+
+    #endregion
+
+
+    #region Internal Functions
+
+    /// <summary>
+    /// Writes a message to the stream.
+    /// </summary>
+    /// <exception cref="SocketException"> If there is a problem with the connection. </exception>
+    /// <param name="packet"> The packet that we want to send. </param>
+    /// <param name="token"> A token to cancel the current operation. </param>
+    protected virtual async Task SendAsyncCore(CommunicationPacket packet, CancellationToken token = default)
+    {
+        try
+        {
+            ReadOnlyMemory<byte> packetBuffer = packet.CreateBuffer();
+
+            await _writer.WriteAsync(packetBuffer.Length, token).ConfigureAwait(false);
+            await _writer.WriteAsync(packetBuffer.Span.ToArray(), token).ConfigureAwait(false);
+            await _stream.FlushAsync(token).ConfigureAwait(false);
+        }
+        catch (SocketException e)
+        {
+            _logger.LogError(e, "There was a problem when writing a message to the portal.");
+
+            throw;
+        }
     }
 
 
     /// <summary>
-    /// Sends back to the client that we have received the packet that was send.
+    /// Reads a packet from the buffer.
     /// </summary>
-    /// <param name="packet"> The packet that we received. We wil transfer this into a packet to send back. </param>
-    public virtual async Task SendAsync(CommunicationPacket packet)
+    /// <exception cref="SocketException"> If there is a problem with the connection. </exception>
+    /// <param name="token"> A token to cancel the current operation. </param>
+    /// <returns> A <see cref="CommunicationPacket" /> that has been send by the portal. </returns>
+    protected virtual async Task<CommunicationPacket> ReadAsyncCore(CancellationToken token = default)
     {
-        ReadOnlyMemory<byte> packetBuffer = packet.CreateBuffer();
-        await _stream.WriteAsync(new Byte[] { 0xAA, 0xBB, 0xCC, 0xDD });
-        await _stream.WriteAsync(BitConverter.GetBytes(Convert.ToUInt32(packetBuffer.Length)));
-        await _stream.WriteAsync(packetBuffer);
+        try
+        {
+            // Reading the packet length.
+            int packetLength = await _reader.ReadInt32Async(token).ConfigureAwait(false);
 
-        await _stream.FlushAsync();
+            // Reading the packet with the given length.
+            ReadOnlyMemory<byte> buffer = await _reader.ReadBytesAsync(packetLength, token).ConfigureAwait(false);
+
+            // Converting it to a communication packet.
+            CommunicationPacket receivedPacket = CommunicationPacket.FromBuffer(buffer);
+
+            return receivedPacket;
+        }
+        catch (SocketException socketException)
+        {
+            _logger.LogError(socketException, "There was a problem while reading from the portal connection.");
+
+            throw;
+        }
     }
 
+
+    /// <summary>
+    /// Sends an acknowledgement packet to the portal.
+    /// </summary>
+    /// <exception cref="SocketException"> If there is a problem with the connection. </exception>
+    /// <param name="token"> A token to cancel the current operation. </param>
+    protected virtual async Task SendAcknowledgementPacketAsync(CancellationToken token = default)
+    {
+        // Writing the acknowledgement packet to the portal.
+        _logger.LogTrace("Sending acknowledgement packet to portal.");
+        await SendAsyncCore(CommunicationPacket.CreateAcknowledgementPacket(), token);
+    }
+
+    #endregion
+
+
+    #region Disposable & AsyncDisposable
 
     private bool _disposed;
 
@@ -305,10 +580,34 @@ public class PortalConnection : IDisposable, IAsyncDisposable
     {
         if (disposing)
         {
+            // Disposing the keep alive timer.
+            _keepCheckAliveTimer?.Dispose();
+
+            // Stopping the reading task.
+            _stoppingToken?.Cancel();
+            _stoppingToken?.Dispose();
+
             if (_client.Connected)
             {
-                _client.Dispose();
+                try
+                {
+                    // Disconnect the client if we are still connected.
+                    _client.Client.Disconnect(true);
+                }
+                catch (SocketException socketException)
+                {
+                    // Log the warning and ignore. We are disposing if we fail then we don't really care.
+                    _logger.LogWarning(socketException, "There was a problem with disconnecting from the portal.");
+                }
+                catch (ObjectDisposedException objectDisposedException)
+                {
+                    // Log the warning and ignore. We are disposing of it anyway.
+                    _logger.LogWarning(objectDisposedException, "Exception that the tcp client had already been disposed.");
+                }
             }
+
+            // Disposing of the client.
+            _client.Dispose();
         }
     }
 
@@ -329,10 +628,36 @@ public class PortalConnection : IDisposable, IAsyncDisposable
 
     protected virtual async ValueTask DisposeAsyncCore()
     {
-        if (_stream.Socket.Connected)
+        // Stopping the keep alive timer.
+        await _keepCheckAliveTimer.DisposeAsync();
+
+        // Stopping the reading task.
+        _stoppingToken?.Cancel();
+        _stoppingToken?.Dispose();
+
+        // Cleaning up the task.
+        if (_readingTask != null)
         {
             try
             {
+                await _readingTask;
+            }
+            catch (AggregateException aggregateException)
+            {
+                _logger.LogWarning(aggregateException, "Task had a error while cleaning up.");
+            }
+            catch (OperationCanceledException canceledException)
+            {
+                _logger.LogWarning(canceledException, "The task threw a operaion cancelled exception.");
+            }
+        }
+
+        // Checking if the client is connected.
+        if (_client.Connected)
+        {
+            try
+            {
+                _logger.LogTrace("Telling the client that we want to disconnect.");
                 await _client.Client.DisconnectAsync(true);
             }
             catch (Exception e)
@@ -346,4 +671,6 @@ public class PortalConnection : IDisposable, IAsyncDisposable
             }
         }
     }
+
+    #endregion
 }

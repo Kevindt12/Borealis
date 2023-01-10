@@ -22,7 +22,7 @@ public sealed class FramesBufferMessage : MessageBase
     /// <summary>
     /// What color spectrum we are using.
     /// </summary>
-    public ColorSpectrum ColorSpectrum { get; }
+    internal ColorSpectrum ColorSpectrum { get; }
 
     /// <summary>
     /// The colors of the ledstrip.

@@ -6,17 +6,22 @@ using Borealis.Domain.Effects;
 namespace Borealis.Domain.Communication;
 
 
+/// <summary>
+/// The serializer used for serializing frames.
+/// </summary>
 public static class FrameSerializer
 {
+    /// <summary>
+    /// Serializes a single frame into the memory buffer given.
+    /// </summary>
+    /// <param name="buffer"> The buffer we want to write to. </param>
+    /// <param name="colorSpectrum"> The color spectrum that we are using on the device. </param>
+    /// <param name="startIndex"> The start index on the buffer that we will start writing to. </param>
+    /// <param name="frame"> The frame that we want to write. </param>
+    /// <exception cref="ArgumentOutOfRangeException"> Thrown when the color spectrum is invalid. </exception>
     public static void SerializeFrame(Memory<byte> buffer, ColorSpectrum colorSpectrum, int startIndex, ReadOnlyMemory<PixelColor> frame)
     {
-        int byteLength = colorSpectrum switch
-        {
-            ColorSpectrum.Rgb   => frame.Length * 3,
-            ColorSpectrum.Rgbw  => frame.Length * 4,
-            ColorSpectrum.Rgbww => frame.Length * 5,
-            _                   => throw new ArgumentOutOfRangeException(nameof(ColorSpectrum))
-        };
+        int byteLength = CalculateByteLength(colorSpectrum, frame.Length);
 
         // Setting all the colors.
         for (int i = startIndex,
@@ -34,6 +39,31 @@ public static class FrameSerializer
             // Up the color index.
             ci++;
         }
+    }
+
+
+    /// <summary>
+    /// Deserializes a frame in the given buffer.
+    /// </summary>
+    /// <param name="buffer"> The buffer we want to read from. </param>
+    /// <param name="colorSpectrum"> The color spectrum that we need to use to deserialize the frame. </param>
+    /// <param name="startIndex"> The start index of the frame in the given buffer. </param>
+    /// <param name="pixelCount"> The length of the frame. (The amount of pixels.) </param>
+    /// <returns> </returns>
+    /// <exception cref="ArgumentOutOfRangeException"> </exception>
+    public static ReadOnlyMemory<PixelColor> DeserializeFrame(ReadOnlyMemory<byte> buffer, ColorSpectrum colorSpectrum, int startIndex, int pixelCount)
+    {
+        int byteLength = CalculateByteLength(colorSpectrum, pixelCount);
+
+        ReadOnlyMemory<PixelColor> frameBuffer = colorSpectrum switch
+        {
+            ColorSpectrum.Rgb   => Deserialize3Byte(buffer.Slice(startIndex, byteLength).Span),
+            ColorSpectrum.Rgbw  => Deserialize4Byte(buffer.Slice(startIndex, byteLength).Span),
+            ColorSpectrum.Rgbww => Deserialize5Byte(buffer.Slice(startIndex, byteLength).Span),
+            _                   => throw new ArgumentOutOfRangeException(nameof(ColorSpectrum))
+        };
+
+        return frameBuffer;
     }
 
 
@@ -76,35 +106,20 @@ public static class FrameSerializer
     }
 
 
-    public static ReadOnlyMemory<PixelColor> DeserializeFrame(ReadOnlyMemory<byte> buffer, ColorSpectrum colorSpectrum, int startIndex, int frameLength)
-    {
-        int byteLength = colorSpectrum switch
-        {
-            ColorSpectrum.Rgb   => frameLength * 3,
-            ColorSpectrum.Rgbw  => frameLength * 4,
-            ColorSpectrum.Rgbww => frameLength * 5,
-            _                   => throw new ArgumentOutOfRangeException(nameof(ColorSpectrum))
-        };
-
-        ReadOnlyMemory<PixelColor> frameBuffer = colorSpectrum switch
-        {
-            ColorSpectrum.Rgb   => Deserialize3Byte(buffer.Slice(startIndex, byteLength).Span),
-            ColorSpectrum.Rgbw  => Deserialize4Byte(buffer.Slice(startIndex, byteLength).Span),
-            ColorSpectrum.Rgbww => Deserialize5Byte(buffer.Slice(startIndex, byteLength).Span),
-            _                   => throw new ArgumentOutOfRangeException(nameof(ColorSpectrum))
-        };
-
-        return frameBuffer;
-    }
-
-
-    public static int CalculateByteLength(ColorSpectrum spectrum, int frameLength)
+    /// <summary>
+    /// This calculates the byte length of a frame by its number of pixels.
+    /// </summary>
+    /// <param name="spectrum"> The spectrum that we are using. </param>
+    /// <param name="pixelCount"> The number of pixels in the frame. </param>
+    /// <returns> The number of bytes the frame will be. </returns>
+    /// <exception cref="ArgumentOutOfRangeException"> If the spectrum is not valid. </exception>
+    public static int CalculateByteLength(ColorSpectrum spectrum, int pixelCount)
     {
         return spectrum switch
         {
-            ColorSpectrum.Rgb   => frameLength * 3,
-            ColorSpectrum.Rgbw  => frameLength * 4,
-            ColorSpectrum.Rgbww => frameLength * 5,
+            ColorSpectrum.Rgb   => pixelCount * 3,
+            ColorSpectrum.Rgbw  => pixelCount * 4,
+            ColorSpectrum.Rgbww => pixelCount * 5,
             _                   => throw new ArgumentOutOfRangeException(nameof(ColorSpectrum))
         };
     }

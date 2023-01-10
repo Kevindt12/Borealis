@@ -10,6 +10,12 @@ public class LedstripSettings
 
 
     /// <summary>
+    /// The token that changes when we change the settings. Indicating everywhere that we have changed the settings.
+    /// </summary>
+    public string Token { get; set; }
+
+
+    /// <summary>
     /// The configuration that holds all the ledstrip data.
     /// </summary>
     public LedstripSettings() { }

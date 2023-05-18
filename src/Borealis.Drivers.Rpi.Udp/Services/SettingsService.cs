@@ -1,12 +1,16 @@
-﻿using System.Text.Json;
+﻿using System;
+
+using Borealis.Shared.Extensions;
+
+using System.Linq;
+using System.Text.Json;
 
 using Borealis.Domain.Devices;
 using Borealis.Portal.Domain.Exceptions;
-using Borealis.Shared.Extensions;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Services;
+namespace Borealis.Drivers.Rpi.Services;
 
 
 public class SettingsService
@@ -31,12 +35,12 @@ public class SettingsService
     /// Reads the settings from the settings file where we keep the information about the ledstrips.
     /// </summary>
     /// <param name="token"> A token to cancel the current operation. </param>
-    /// <returns> A <see cref="LedstripSettings" /> object where we have all the settings adn the concurrency token. </returns>
+    /// <returns> A <see cref="DeviceConfiguration" /> object where we have all the settings adn the concurrency token. </returns>
     /// <exception cref="InvalidOperationException"> Thrown when there was no settings path specified. </exception>
     /// <exception cref="InvalidDeviceConfigurationException"> Thrown when unable to read the file that was specified. </exception>
     /// <exception cref="IOException"> Thrown when there is a problem with reading the file. </exception>
     /// <exception cref="FileNotFoundException"> Thrown when we cant find the path to the settings file defined in the appsettings.js </exception
-    public virtual async Task<LedstripSettings> ReadLedstripSettingsAsync(CancellationToken token = default)
+    public virtual async Task<DeviceConfiguration> ReadLedstripSettingsAsync(CancellationToken token = default)
     {
         _logger.LogDebug("Getting the settings path from the appsettings.json.");
         string settingsPath = GetSettingsPath();
@@ -48,10 +52,10 @@ public class SettingsService
             string json = await File.ReadAllTextAsync(settingsPath, token).ConfigureAwait(false);
 
             // Deserializing the Json
-            LedstripSettings settings = JsonSerializer.Deserialize<LedstripSettings>(json)!;
-            _logger.LogDebug($"Settings have been read {settings.LogToJson()}");
+            DeviceConfiguration configuration = JsonSerializer.Deserialize<DeviceConfiguration>(json)!;
+            _logger.LogDebug($"Settings have been read {configuration.LogToJson()}");
 
-            return settings;
+            return configuration;
         }
         catch (JsonException jsonException)
         {
@@ -65,12 +69,12 @@ public class SettingsService
     /// <summary>
     /// Writes the new settings to the file specified in the appsettings.json
     /// </summary>
-    /// <param name="ledstripSettings"> The <see cref="LedstripSettings" /> that we want to write to disk. </param>
+    /// <param name="deviceConfiguration"> The <see cref="DeviceConfiguration" /> that we want to write to disk. </param>
     /// <param name="token"> A token to cancel the current operation. </param>
     /// <exception cref="IOException"> Thrown when there is an error writing to disk. </exception>
     /// <exception cref="InvalidOperationException"> When the settings path has not been filled in. </exception>
     /// <exception cref="FileNotFoundException"> When the file could not be found. </exception>
-    public virtual async Task WriteLedstripSettingsAsync(LedstripSettings ledstripSettings, CancellationToken token = default)
+    public virtual async Task WriteLedstripSettingsAsync(DeviceConfiguration deviceConfiguration, CancellationToken token = default)
     {
         _logger.LogDebug("Getting the settings path from the appsettings.json.");
         string settingsPath = GetSettingsPath();
@@ -79,7 +83,7 @@ public class SettingsService
         _logger.LogInformation($"Settings file found at {settingsPath}.");
 
         // Serializing the json.
-        string json = JsonSerializer.Serialize(ledstripSettings);
+        string json = JsonSerializer.Serialize(deviceConfiguration);
         _logger.LogDebug($"Serialized the settings. {json}.");
 
         try

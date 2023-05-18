@@ -1,9 +1,9 @@
-﻿using Borealis.Domain.Animations;
-using Borealis.Domain.Effects;
+﻿using Borealis.Domain.Effects;
+using Borealis.Domain.Ledstrips;
 using Borealis.Domain.Runtime;
 using Borealis.Portal.Data.Converters;
 using Borealis.Portal.Domain.Configuration;
-using Borealis.Portal.Domain.Devices;
+using Borealis.Portal.Domain.Devices.Models;
 
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -24,14 +24,14 @@ public class ApplicationDbContext : DbContext
     public DbSet<Effect> Effects { get; set; }
 
     /// <summary>
-    /// The animations aggregates
-    /// </summary>
-    public DbSet<Animation> Animations { get; set; }
-
-    /// <summary>
     /// The Device aggregates
     /// </summary>
     public DbSet<Device> Devices { get; set; }
+
+    /// <summary>
+    /// The ledstrips that we know of.
+    /// </summary>
+    public DbSet<Ledstrip> Ledstrips { get; set; }
 
 
     public ApplicationDbContext(IConfiguration configuration)
@@ -71,7 +71,9 @@ public class ApplicationDbContext : DbContext
             effect.ToTable("Effects");
 
             effect.HasKey(p => p.Id);
-            effect.Ignore(p => p.JavascriptModules);
+            effect.HasMany(p => p.JavascriptModules);
+
+            effect.Property(p => p.Frequency).HasConversion<FrequencyTypeConverter>();
 
             // Effect Parameters
             effect.OwnsMany(p => p.EffectParameters,
@@ -91,37 +93,24 @@ public class ApplicationDbContext : DbContext
             device.HasKey(p => p.Id);
 
             device.Property(p => p.EndPoint).HasConversion<IPEndPointTypeConverter>();
+            device.Property(p => p.ConfigurationConcurrencyToken).IsRequired();
 
-            device.Ignore(p => p.Configuration);
+            device.HasMany(p => p.Ports).WithOne(x => x.Device);
         });
 
-        // Animation
-        modelBuilder.Entity<Animation>(animation =>
+        modelBuilder.Entity<DevicePort>(configuration =>
         {
-            animation.ToTable("Animations");
-            animation.HasKey(p => p.Id);
+            configuration.ToTable("DeviceConnections");
+            configuration.HasKey(p => p.Id);
 
-            animation.Property(p => p.Frequency).HasConversion<FrequencyTypeConverter>();
+            configuration.HasOne(p => p.Ledstrip);
+        });
 
-            // Effect
-            animation.OwnsOne(p => p.Effect,
-                              ae =>
-                              {
-                                  ae.ToTable("AnimationEffects");
-                                  ae.HasKey(p => p.Id);
-
-                                  ae.Ignore(p => p.JavascriptModules);
-
-                                  // Effect Parameters
-                                  ae.OwnsMany(p => p.EffectParameters,
-                                              ef =>
-                                              {
-                                                  ef.ToTable("AnimationEffectParameters");
-                                                  ef.WithOwner().HasForeignKey("EffectId");
-                                                  ef.HasKey(p => p.Id);
-                                                  ef.Property(p => p.Value).HasConversion<EffectParameterValueConverter>();
-                                              });
-                              });
+        // Ledstrips
+        modelBuilder.Entity<Ledstrip>(ledstrip =>
+        {
+            ledstrip.ToTable("Ledstrips");
+            ledstrip.HasKey(p => p.Id);
         });
 
         modelBuilder.Entity<JavascriptModule>(module =>

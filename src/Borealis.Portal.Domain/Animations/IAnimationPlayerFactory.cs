@@ -1,5 +1,5 @@
-﻿using Borealis.Domain.Animations;
-using Borealis.Portal.Domain.Connections;
+﻿using Borealis.Domain.Effects;
+using Borealis.Portal.Domain.Connectivity.Connections;
 
 
 
@@ -17,5 +17,5 @@ public interface IAnimationPlayerFactory
     /// <param name="animation"> The animation we want to play. </param>
     /// <param name="ledstrip"> The ledstrip we want to play it on. </param>
     /// <returns> an <see cref="IAnimationPlayer" /> that is ready to be used. </returns>
-    IAnimationPlayer CreateAnimationPlayer(Animation animation, ILedstripConnection ledstrip);
+    Task<IAnimationPlayer> CreateAnimationPlayerAsync(Effect effect, ILedstripConnection ledstrip, CancellationToken token = default);
 }

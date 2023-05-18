@@ -33,4 +33,10 @@ public static class StringExtensions
 
         return resultString;
     }
+
+
+    public static Guid ToGuid(this string value)
+    {
+        return Guid.Parse(value);
+    }
 }

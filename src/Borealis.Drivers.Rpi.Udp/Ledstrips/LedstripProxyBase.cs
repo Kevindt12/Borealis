@@ -2,12 +2,11 @@
 using System.Drawing;
 using System.Linq;
 
-using Borealis.Domain.Devices;
-using Borealis.Domain.Effects;
+using Borealis.Domain.Ledstrips;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Ledstrips;
+namespace Borealis.Drivers.Rpi.Ledstrips;
 
 
 public abstract class LedstripProxyBase : IDisposable

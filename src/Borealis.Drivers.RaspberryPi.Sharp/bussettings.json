@@ -1,0 +1,10 @@
+﻿{
+  "0": {
+    "SpiBusId": 0,
+    "SpiChipSelectId": 0
+  },
+  "1": {
+    "SpiBusId": 0,
+    "SpiChipSelectId": 1
+  }
+}

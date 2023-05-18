@@ -1,5 +1,11 @@
-using Borealis.Portal.Core.Extensions;
+using System;
+
+using Borealis.Portal.Core.DependencyInjection;
+
+using System.Linq;
+
 using Borealis.Portal.Domain.Configuration;
+using Borealis.Portal.Domain.Effects.Options;
 
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 
@@ -10,8 +16,14 @@ using NLog.Extensions.Logging;
 
 
 
+namespace Borealis.Portal.Web;
+
+
 public static class Program
 {
+    public static IConfiguration Configuration { get; private set; }
+
+
     public static async Task Main(string[] args)
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -55,6 +67,9 @@ public static class Program
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        // Configure options
+        services.Configure<JavascriptFilePathsOptions>(Configuration.GetSection(JavascriptFilePathsOptions.Name));
+
         // Adding the core application services.
         services.AddApplicationServices();
 
@@ -75,6 +90,8 @@ public static class Program
         // Adding the persistanece locations.
         // Key : DatabaseLocation | Value : Database.db
         config[ConfigurationKeys.DatabaseSourceLocation] = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Database.db");
+
+        Configuration = config;
     }
 
 

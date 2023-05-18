@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Borealis.Domain", "src\Borealis.Domain\Borealis.Domain.csproj", "{0FA8E03E-4264-4B5D-A9C8-0A74E02648EF}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1 - Domain", "1 - Domain", "{61E90828-75A3-4E68-BCAB-A189177F0E02}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2 - Portal", "2 - Portal", "{C288BA35-A70D-428A-A170-EA472DCE907A}"
@@ -29,13 +27,49 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Borealis.Portal.Data", "src
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastrcuture", "Infrastrcuture", "{C581A3DE-FFCC-47FA-B475-CD992F083FDF}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Rpi", "Rpi", "{AE40E8EF-A7AE-4186-9BAD-F2330141A2B9}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RaspberryPi", "RaspberryPi", "{AE40E8EF-A7AE-4186-9BAD-F2330141A2B9}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Borealis.Portal.Infrastructure", "src\Borealis.Portal.Infrastructure\Borealis.Portal.Infrastructure.csproj", "{DE2692B7-B708-47E3-9551-7F617983ACAD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Borealis.Shared", "src\Borealis.Shared\Borealis.Shared.csproj", "{E68C0687-D941-41CB-BD63-6D97C327FACE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Borealis.Drivers.Rpi.Udp", "src\Borealis.Drivers.Rpi.Udp\Borealis.Drivers.Rpi.Udp.csproj", "{82003BE2-ADA5-4531-928E-25D138519B3A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Borealis.Drivers.Rpi", "src\Borealis.Drivers.Rpi.Udp\Borealis.Drivers.Rpi.csproj", "{82003BE2-ADA5-4531-928E-25D138519B3A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "5 - Scripts", "5 - Scripts", "{A30138FC-2F62-4CF2-8B01-D9DB5E6AA302}"
+	ProjectSection(SolutionItems) = preProject
+		FlatBuffersCompile.ps1 = FlatBuffersCompile.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Communication", "Communication", "{C54AEDD2-C8D1-4E3E-86B4-A146C1B67576}"
+	ProjectSection(SolutionItems) = preProject
+		communication\MicrocontrollerMessages.fbs = communication\MicrocontrollerMessages.fbs
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Borealis.Drivers.RaspberryPi.Sharp", "src\Borealis.Drivers.RaspberryPi.Sharp\Borealis.Drivers.RaspberryPi.Sharp.csproj", "{F36B9ED6-A715-4448-A207-73915C5239A0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{3D04BBA2-D571-4A3D-9809-2D941E3B9C7A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Borealis.Drivers.RaspberryPi.Sharp.Tests", "src\tests\Borealis.Drivers.RaspberryPi.Sharp.Tests\Borealis.Drivers.RaspberryPi.Sharp.Tests.csproj", "{50FC8864-BBBB-492A-97C7-15CAD25F37DD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Publish", "Publish", "{D83AB220-02EA-4BF5-B67C-2FDBF83B33E4}"
+	ProjectSection(SolutionItems) = preProject
+		CopyPublish.ps1 = CopyPublish.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{34A96D3D-BF76-41C4-BF4B-E13CEA4B1B98}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Borealis.Portal.Infrastructure.Tests", "src\tests\Borealis.Portal.Infrastructure.Tests\Borealis.Portal.Infrastructure.Tests.csproj", "{4F5DB66E-D56D-448D-BC57-6B1EB09D391C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{20B32B7C-C7F5-4DC2-B362-6F266ED2A7FA}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Networking", "Networking", "{A895D7B3-3174-46E9-B1AA-DD5BEDA491A6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Borealis.Networking", "src\Borealis.Networking\Borealis.Networking.csproj", "{955BC6B3-542E-4AF8-A9F1-F47525BCF192}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Borealis.Networking.Tests", "src\tests\Borealiis.Networking.Tests\Borealis.Networking.Tests.csproj", "{CC709ABF-C607-4921-BF21-52BB98BC09C2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,10 +77,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0FA8E03E-4264-4B5D-A9C8-0A74E02648EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0FA8E03E-4264-4B5D-A9C8-0A74E02648EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0FA8E03E-4264-4B5D-A9C8-0A74E02648EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0FA8E03E-4264-4B5D-A9C8-0A74E02648EF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1A695D97-489E-41AD-AED7-E2A167D15918}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1A695D97-489E-41AD-AED7-E2A167D15918}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A695D97-489E-41AD-AED7-E2A167D15918}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -75,12 +105,31 @@ Global
 		{82003BE2-ADA5-4531-928E-25D138519B3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{82003BE2-ADA5-4531-928E-25D138519B3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{82003BE2-ADA5-4531-928E-25D138519B3A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F36B9ED6-A715-4448-A207-73915C5239A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F36B9ED6-A715-4448-A207-73915C5239A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F36B9ED6-A715-4448-A207-73915C5239A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F36B9ED6-A715-4448-A207-73915C5239A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50FC8864-BBBB-492A-97C7-15CAD25F37DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50FC8864-BBBB-492A-97C7-15CAD25F37DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50FC8864-BBBB-492A-97C7-15CAD25F37DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50FC8864-BBBB-492A-97C7-15CAD25F37DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F5DB66E-D56D-448D-BC57-6B1EB09D391C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F5DB66E-D56D-448D-BC57-6B1EB09D391C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F5DB66E-D56D-448D-BC57-6B1EB09D391C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F5DB66E-D56D-448D-BC57-6B1EB09D391C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{955BC6B3-542E-4AF8-A9F1-F47525BCF192}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{955BC6B3-542E-4AF8-A9F1-F47525BCF192}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{955BC6B3-542E-4AF8-A9F1-F47525BCF192}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{955BC6B3-542E-4AF8-A9F1-F47525BCF192}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC709ABF-C607-4921-BF21-52BB98BC09C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC709ABF-C607-4921-BF21-52BB98BC09C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC709ABF-C607-4921-BF21-52BB98BC09C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC709ABF-C607-4921-BF21-52BB98BC09C2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{0FA8E03E-4264-4B5D-A9C8-0A74E02648EF} = {61E90828-75A3-4E68-BCAB-A189177F0E02}
 		{9670FEB5-8593-4668-B8C4-FFDD063ADD6C} = {C288BA35-A70D-428A-A170-EA472DCE907A}
 		{1A695D97-489E-41AD-AED7-E2A167D15918} = {9670FEB5-8593-4668-B8C4-FFDD063ADD6C}
 		{A9598C87-ABE9-4AD0-B1E6-31C23E96E146} = {C288BA35-A70D-428A-A170-EA472DCE907A}
@@ -93,6 +142,16 @@ Global
 		{DE2692B7-B708-47E3-9551-7F617983ACAD} = {C581A3DE-FFCC-47FA-B475-CD992F083FDF}
 		{E68C0687-D941-41CB-BD63-6D97C327FACE} = {91F88A79-5F8D-42E0-9A3A-464FA96BB3E9}
 		{82003BE2-ADA5-4531-928E-25D138519B3A} = {AE40E8EF-A7AE-4186-9BAD-F2330141A2B9}
+		{C54AEDD2-C8D1-4E3E-86B4-A146C1B67576} = {61E90828-75A3-4E68-BCAB-A189177F0E02}
+		{F36B9ED6-A715-4448-A207-73915C5239A0} = {AE40E8EF-A7AE-4186-9BAD-F2330141A2B9}
+		{3D04BBA2-D571-4A3D-9809-2D941E3B9C7A} = {AE40E8EF-A7AE-4186-9BAD-F2330141A2B9}
+		{50FC8864-BBBB-492A-97C7-15CAD25F37DD} = {3D04BBA2-D571-4A3D-9809-2D941E3B9C7A}
+		{D83AB220-02EA-4BF5-B67C-2FDBF83B33E4} = {A30138FC-2F62-4CF2-8B01-D9DB5E6AA302}
+		{34A96D3D-BF76-41C4-BF4B-E13CEA4B1B98} = {C288BA35-A70D-428A-A170-EA472DCE907A}
+		{4F5DB66E-D56D-448D-BC57-6B1EB09D391C} = {34A96D3D-BF76-41C4-BF4B-E13CEA4B1B98}
+		{A895D7B3-3174-46E9-B1AA-DD5BEDA491A6} = {61E90828-75A3-4E68-BCAB-A189177F0E02}
+		{955BC6B3-542E-4AF8-A9F1-F47525BCF192} = {A895D7B3-3174-46E9-B1AA-DD5BEDA491A6}
+		{CC709ABF-C607-4921-BF21-52BB98BC09C2} = {A895D7B3-3174-46E9-B1AA-DD5BEDA491A6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {04BDF5A4-67FE-42D4-A642-96BD029EEA05}

@@ -1,0 +1,59 @@
+﻿@page "/ledstrips"
+@using Borealis.Portal.Domain.Ledstrips.Managers
+@using Borealis.Domain.Ledstrips
+
+
+
+@* ReSharper disable InconsistentNaming | This is because i want to threat them as fields. I know this is just an autistic thing.*@
+@inject ILogger<LedstripsPage> _logger
+
+@inject ILedstripManager _ledstripManager
+
+@inject NavigationManager _NavigationManager
+@inject ISnackbar _snackbar
+@inject IDialogService _dialogService
+@* ReSharper restore InconsistentNaming *@
+
+
+<PageTitle>Edit Ledstrip</PageTitle>
+
+@* The action buttons. *@
+<MudStack Class="py-4" AlignItems="AlignItems.Start" Justify="Justify.SpaceBetween" Row="true" >
+
+    @* The add button.*@
+    <MudButton Class="pa-2"
+               Size="Size.Small"
+               Variant="Variant.Filled"
+               StartIcon="@Icons.Material.Filled.Add"
+               Color="Color.Primary"
+               OnClick="OnAddAsync" >Add</MudButton>
+               
+
+</MudStack>
+
+
+<MudStack Class="pa-4" Spacing="20">
+
+    <MudTable T="Ledstrip" Items="@Ledstrips" Hover="true" Breakpoint="Breakpoint.Sm" >
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Pixel Count</MudTh>
+            <MudTh>Chip</MudTh>
+            <MudTh Class="d-flex justify-end">Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Nr" >@context.Name</MudTd>
+            <MudTd DataLabel="Sign" >@context.Length</MudTd>
+            <MudTd DataLabel="Name" >@context.Chip</MudTd>
+            <MudTd Class="d-flex justify-end" DataLabel="Actions">
+                <MudButtonGroup Variant="Variant.Filled" >
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="() => OnEditLedstripAsync(context)"/>
+                    <MudIconButton Icon="@Icons.Material.Filled.Remove" OnClick="() => OnDeleteLedstripAsync(context)"/>
+                </MudButtonGroup>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+
+
+
+</MudStack>

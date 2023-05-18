@@ -7,8 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Animations\" />
-    <Folder Include="Communication\Exceptions\" />
     <Folder Include="Runtime\" />
   </ItemGroup>
 

@@ -1,8 +1,9 @@
-﻿using Borealis.Domain.Effects;
+﻿using System;
+using System.Linq;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Commands.Actions;
+namespace Borealis.Drivers.Rpi.Commands.Actions;
 
 
 public record FrameBufferQuery

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-using Borealis.Portal.Domain.Devices;
+using Borealis.Portal.Domain.Devices.Models;
 
 
 

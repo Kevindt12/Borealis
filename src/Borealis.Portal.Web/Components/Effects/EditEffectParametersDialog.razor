@@ -1,0 +1,61 @@
+﻿@using Borealis.Domain.Effects
+
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h5">
+            <MudIcon Icon="@Icons.Material.Filled.Colorize" Class="mr-3" /> Pick Color
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @for (int i = 0; i < EffectParameters.Count; i++)
+        {
+            int index = i;
+            <EffectParameterRow @bind-EffectParameter="@EffectParameters[index]" DisableRemoveButton="@true"/>
+        }
+
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" Class="px-10" OnClick="Close">Select</MudButton>
+        <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Secondary" OnClick="Save" Class="px-10">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+
+@code {
+
+
+    [CascadingParameter]
+    protected MudDialogInstance MudDialog { get; set; }
+
+
+    [Parameter]
+    public List<EffectParameter> EffectParameters { get; set; } = new List<EffectParameter>();
+
+
+
+    public void Close()
+    {
+        MudDialog.Cancel();
+    }
+
+
+    public void Save()
+    {
+        MudDialog.Close(EffectParameters);
+    }
+
+
+
+    public static DialogParameters GenerateParameters(IEnumerable<EffectParameter> effectParameters)
+    {
+        return new DialogParameters()
+        {
+            {
+                nameof(Effect), new List<EffectParameter>(effectParameters)
+            }
+        };
+    }
+}

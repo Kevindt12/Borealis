@@ -1,0 +1,68 @@
+﻿@using Borealis.Portal.Domain.Common
+@using MudBlazor.Utilities
+
+<MudDialog >
+    <TitleContent>
+        <MudText Typo="Typo.h5" >
+            <MudIcon Icon="@Icons.Material.Filled.Colorize" Class="mr-3"/> Pick Color
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudColorPicker PickerVariant="PickerVariant.Static" @bind-Value="@_selectedColor" Class="pa-4" DisableAlpha="true" DisableToolbar="true"/>
+
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" Class="px-10" OnClick="Select" >Select</MudButton>
+        <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Secondary" OnClick="Close" Class="px-10" >Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+
+@code {
+
+    private MudColor _selectedColor;
+
+
+    [CascadingParameter]
+    protected MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public PixelColor Color
+    {
+        get => new PixelColor(_selectedColor.R, _selectedColor.G, _selectedColor.B);
+        set => _selectedColor = new MudColor(value.R, value.G, value.B, (byte)255);
+    }
+
+
+
+    protected void Close()
+    {
+        MudDialog.Cancel();
+    }
+
+
+    protected void Select()
+    {
+        MudDialog.Close(DialogResult.Ok(Color));
+    }
+
+
+    /// <summary>
+    /// Creates the parameters for this dialog.
+    /// </summary>
+    /// <param name="color">The color that we want to change.</param>
+    /// <returns>A <see cref="DialogParameters"/> object that has the parameter of the color. </returns>
+    public static DialogParameters CreateParameters(PixelColor? color = null)
+    {
+        color ??= new PixelColor();
+        return new DialogParameters()
+        {
+            {
+                nameof(Color), color
+            }
+        };
+    }
+
+}

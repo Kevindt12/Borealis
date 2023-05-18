@@ -1,0 +1,208 @@
+﻿syntax = "proto3";
+
+
+package borealis;
+
+option csharp_namespace = "Borealis.Networking.Messages";
+
+import "google/protobuf/any.proto";
+
+
+/*
+
+Message process
+
+- Connect
+Portal    --->          ConnectRequest         --->    Driver     --->        ConnectReply       --->  Portal
+
+- Configuration
+Portal    --->      SetConfigurationRequest    --->    Driver     --->   SetConfigurationReply   --->  Portal
+
+- Start Animation
+Portal    --->      StartAnimationRequest      --->    Driver     --->   SuccessReply/ErrorReply --->  Portal
+
+- Animation Frame buffer
+Driver    --->      AnimationFBufferRequest    --->    Portal     --->    AnimationBufferReply    --->  Driver
+
+- Pause Animation
+Portal    --->      PauseAnimationRequest      --->    Driver     --->    SuccessReply/ErrorReply    --->  Portal
+
+- Stop Animation
+Portal    --->       StopAnimationRequest      --->    Driver     --->     SuccessReply/ErrorReply    --->  Portal
+
+- Set Ledstrip Color
+Portal    --->      SetLedstripColorRequest    --->    Driver     --->   SuccessReply/ErrorReply   --->  Portal
+
+- Clear Ledstrip 
+Portal    --->      SetLedstripColorRequest    --->    Driver     --->   SuccessReply/ErrorReply   --->  Portal
+
+- Get Driver status
+Portal    --->      GetDriverStatusRequest     --->    Driver     --->    GetDriverStatusReply   --->  Portal
+
+
+Notes
+  * All replies can have a ErrorReply except of there reply message indicating that there was an error.
+  * 
+
+*/
+
+
+
+
+
+
+//    -------- The Messages     --------
+
+// Connect messages
+// ID: 1
+message ConnectRequest {
+
+}
+
+// ID: 2
+message ConnectReply {
+  string concurrencyToken = 1;
+}
+
+
+// Set Configuration
+// ID: 5
+message SetConfigurationRequest {
+  string concurrencyToken = 1;
+  ConfigurationMessage configurationMessage = 2;
+}
+
+// ID: 6 
+message SetConfigurationReply {
+  bool success = 1;
+  string errorMessage = 2;
+}
+
+
+// Start Animation
+// ID: 100
+message StartAnimationRequest {
+  string ledstripId = 1;
+  double frequency = 2;
+  repeated FrameMessage initialFrameBuffer = 3;
+}
+
+
+// Stop Animation
+// ID: 110
+message StopAnimationRequest {
+  string ledstripId = 1;
+
+}
+
+// Animation Buffer Request
+// ID: 120
+message AnimationBufferRequest {
+  string ledstripId = 1;
+  int32 requestedFrameCount = 2;
+
+}
+
+// ID: 121
+message AnimationBufferReply {
+  repeated FrameMessage frameBuffer = 1;
+}
+
+
+// Set Ledstrip color
+// ID: 150
+message DisplayFrameRequest {
+  string ledstripId = 1;
+  FrameMessage frame = 2;
+}
+
+// ID: 160
+message ClearLedstripRequest{
+  string ledstripId = 1;
+}
+
+// Get driver status
+// ID: 250
+message GetDriverStatusRequest {
+  // Note if ledstrip id is empty it should return for all ledstrips.
+  string ledstripId = 1;
+}
+
+// ID: 251
+message GetDriverStatusReply {
+  repeated LedstripStatusMessage ledstripStatuses = 1;
+}
+
+
+// Standard Replies
+
+// ID: 255
+message ErrorReply {
+  ErrorId errorId = 1;
+  string message = 2;
+  repeated google.protobuf.Any data = 3;
+}
+
+// ID: 254
+message SuccessReply {
+
+}
+
+
+//    --------    The Models     -------
+
+message LedstripStatusMessage {
+  string ledstripId = 1;
+  LedstripStatus ledstripStatus = 2;
+}
+
+
+message ConfigurationMessage {
+  LedstripMessage ledstrips = 1;
+}
+
+message LedstripMessage {
+  uint32 busId = 1;
+  string ledstripId = 2;
+  uint32 pixelCount = 3;
+  LedstripChip Chip = 4;
+}
+
+
+message FrameMessage {
+  repeated sfixed32 pixels = 1;
+}
+
+
+
+
+
+
+//    ------    Enums     --------
+
+// The status of a ledstrip.
+enum LedstripStatus {
+  IDLE = 0;
+  DISPALYING_FRAME = 1;
+  PAUSED = 2;
+  PLAYING = 3;
+}
+
+// The chip used on the ledstrip. Note the first one should always throw errors on both sides.
+enum LedstripChip {
+    DEFAULT = 0;
+    WS2812B = 1;
+    WS2813 = 2;
+    WS2815 = 3;
+    APA102 = 4;
+    SK6812 = 5;
+    SK9822 = 6;
+}
+
+enum ErrorId {
+  UNKNOWN = 0;
+  UNIMPLEMENTED = 1;
+  COMMUNICATION = 2;
+  INTERNALERROR = 3;
+  CONFIGURATION = 4;
+}

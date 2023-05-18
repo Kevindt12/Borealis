@@ -1,12 +1,14 @@
-﻿using Borealis.Domain.Effects;
-using Borealis.Drivers.Rpi.Udp.Commands.Actions;
-using Borealis.Drivers.Rpi.Udp.Connections;
-using Borealis.Drivers.Rpi.Udp.Contexts;
-using Borealis.Drivers.Rpi.Udp.Exceptions;
+﻿using System;
+using System.Linq;
+
+using Borealis.Drivers.Rpi.Commands.Actions;
+using Borealis.Drivers.Rpi.Connections;
+using Borealis.Drivers.Rpi.Contexts;
+using Borealis.Drivers.Rpi.Exceptions;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Commands.Handlers;
+namespace Borealis.Drivers.Rpi.Commands.Handlers;
 
 
 public class RequestFrameBufferQueryHandler : IQueryHandler<RequestFrameBufferCommand, FrameBufferQuery>

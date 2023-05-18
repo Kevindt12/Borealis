@@ -1,0 +1,143 @@
+﻿@page "/Effects"
+@using Borealis.Portal.Web.Pages.Devices
+@using Borealis.Portal.Domain.Effects.Managers
+@using Borealis.Portal.Domain.Effects.Factories
+@using Borealis.Domain.Effects
+@using Borealis.Portal.Web.Components.Effects
+@using Borealis.Portal.Web.Components
+
+@using Microsoft.AspNetCore.Components
+
+@*
+    * TODO: The effect dialog width is too small and needs to be incrceased.
+    * TODO: Showing the base library and not the javascript file
+
+*@
+
+@*d-flex justify-end*@
+
+
+@* ReSharper disable InconsistentNaming | This is because i want to threat them as fields. I know this is just a autistic thing.*@
+@inject ILogger<DevicesPage> _logger
+@inject IEffectManager _effectManager
+@inject IEffectFactory _EffectFactory
+
+@inject ISnackbar _snackbar
+@inject IDialogService _dialogService
+@* ReSharper restore InconsistentNaming *@
+
+<PageTitle>Effects</PageTitle>
+
+@* The action buttons. *@
+<MudStack Class="py-4" AlignItems="AlignItems.Start" Justify="Justify.SpaceBetween" Row="true">
+
+    @* The add button.*@
+    <MudButton Class="pa-2"
+               Size="Size.Small"
+               Variant="Variant.Filled"
+               StartIcon="@Icons.Material.Filled.Add"
+               Color="Color.Primary"
+               OnClick="OnAddEffectAsync">Add</MudButton>
+
+    @* The Save button, *@
+    <MudButton Class="pa-2 mr-5"
+               Size="Size.Small"
+               Variant="Variant.Filled"
+               StartIcon="@Icons.Material.Filled.Save"
+               Disabled="@(!Effects.Any())"
+               Color="Color.Secondary"
+               OnClick="OnSaveAsync">Save</MudButton>
+
+</MudStack>
+
+
+@* The tabs with all the effects editor. *@
+<MudTabs Class="mt-8" PanelClass="pa-6"
+         Outlined="true"
+         Border="true" AlwaysShowScrollButtons="false"
+         Position="MudBlazor.Position.Left"
+         @bind-ActivePanelIndex="SelectedEffectIndex">
+
+    @for (int index = 0; index < Effects.Count; index++)
+    {
+        Effect effect = Effects[index];
+        EffectFile selectedEffectFile = effect.Files.Last();
+
+        /* Each effect tab panel. */
+        <MudTabPanel Class="pa-2" Text="@effect.Name">
+
+            <MudStack>
+
+                @* Javascript editor *@
+                <MudPaper MinHeight="500" MaxHeight="800" Elevation="2">
+                    <MudToolBar DisableGutters="false" Dense="false">
+                        <MudButtonGroup Variant="Variant.Filled" VerticalAlign="false" OverrideStyles="false" Class="pa-2" Size="Size.Small" Style="Width: 100%;">
+                            <MudIconButton Class="py-4 px-6" Icon="@Icons.Material.Filled.Add" OnClick="() => OnCommitEffectFileAsync(effect, selectedEffectFile)" />
+                            <MudSelect FullWidth="true" Class="px-6" Style="width: 250px; margin-top: 0px;" Dense="true" DisableUnderLine="true" Margin="Margin.None" T="EffectFile" @bind-Value="@selectedEffectFile">
+                                @foreach (EffectFile file in effect.Files)
+                                {
+                                    <MudSelectItem T="EffectFile" Value="file">@file.Updated.ToLongDateString()</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudButtonGroup>
+                    </MudToolBar>
+                    <CodeEditor Id="@effect.Id" Value="@selectedEffectFile.Javascript" ValueChanged="content => OnEditorValueChanged(selectedEffectFile, content)" Width="1000" />
+                </MudPaper>
+                <MudDivider DividerType="@DividerType.Inset" />
+
+                @* Javascript Parameters *@
+                <MudPaper Class="px-4 py-2" Elevation="2">
+
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText Class="px-4 py-2" Typo="@Typo.h6" Align="@Align.Left">Parameters</MudText>
+                        <MudIconButton Class="d-flex justify-end" Icon="@Icons.Material.Filled.Add" OnClick="() => OnAddParameterAsync(effect)"></MudIconButton>
+                    </MudStack>
+
+                    @for (int i = 0; i < @effect.EffectParameters.Count; i++)
+                    {
+                        EffectParameter parameter = effect.EffectParameters[i];
+
+                        <MudStack Class="pa-1" Row="true" Justify="Justify.FlexEnd" AlignItems="AlignItems.Center">
+
+                            <MudTextField Class="pa-2" Label="Identifier" T="@string" @bind-Value="@parameter.Identifier" Validation="@ValidateParameterIdentifier" Variant="Variant.Outlined" />
+                            <MudTextField Class="pa-2" Label="Description" T="@string" @bind-Value="@parameter.Description" Variant="Variant.Outlined" />
+                            <MudSelect Class="oa-2" Label="Type" T="@EffectParameterType" @bind-Value="@parameter.ParameterType" Variant="Variant.Outlined">
+                                <MudSelectItem T="@EffectParameterType" Value="EffectParameterType.Number">Number</MudSelectItem>
+                                <MudSelectItem T="@EffectParameterType" Value="EffectParameterType.Boolean">Boolean</MudSelectItem>
+                                <MudSelectItem T="@EffectParameterType" Value="EffectParameterType.Text">Text</MudSelectItem>
+                                <MudSelectItem T="@EffectParameterType" Value="EffectParameterType.Color">Color</MudSelectItem>
+                                <MudSelectItem T="@EffectParameterType" Value="EffectParameterType.ColorArray">Color Array</MudSelectItem>
+                            </MudSelect>
+                            <EffectParameterValueField Class="pa-2" Label="Value" ParameterType="@parameter.ParameterType" @bind-Value="@parameter.Value" Variant="Variant.Outlined" />
+
+                            <MudIconButton Class="d-flex justify-end" Size="@Size.Medium" Icon="@Icons.Material.Outlined.Remove" OnClick="() => OnRemoveEffectParameterAsync(effect, parameter)" />
+                        </MudStack>
+                    }
+                </MudPaper>
+
+                <MudDivider DividerType="@DividerType.Inset" />
+
+                @* Options *@
+                <MudPapaer Class="px-4 py-2" Elevation="2">
+                    <MudText Class="px-4 py-2" Typo="Typo.h6">Options</MudText>
+                    <MudStack Row="true"></MudStack>
+                    <FrequencyField Class="pa-2" Label="Frequency" @bind-Frequency="@effect.Frequency" Variant="Variant.Outlined"></FrequencyField>
+                </MudPapaer>
+                @*
+            @* Testing
+            <MudPaper Class="px-4 py-2" Outlined="true">
+            <MudText Class="px-4 py-2" Typo="@Typo.h5" Align="@Align.Left">Testing</MudText>
+
+            <MudStack Justify="Justify.SpaceAround">
+            <EffectEmulator Effect="Effect" />
+
+            </MudStack>
+            </MudPaper>*@
+
+
+            </MudStack>
+
+        </MudTabPanel>
+    }
+</MudTabs>
+

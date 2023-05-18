@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
@@ -6,13 +6,27 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'" />
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'" />
+
   <ItemGroup>
+    <PackageReference Include="Google.FlatBuffers" Version="23.3.3" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.49.0" />
+    <PackageReference Include="Overby.Extensions.AsyncBinaryReaderWriter" Version="1.0.39" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" Version="19.2.16" />
     <PackageReference Include="UnitsNet" Version="4.149.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Borealis.Portal.Domain\Borealis.Portal.Domain.csproj" />
+    <ProjectReference Include="..\Borealis.Shared\Borealis.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Connectivity\Options\" />
+    <Folder Include="Messages\" />
+    <Folder Include="Properties\" />
   </ItemGroup>
 
 </Project>

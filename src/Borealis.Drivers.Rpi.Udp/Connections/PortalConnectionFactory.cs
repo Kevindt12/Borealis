@@ -1,11 +1,13 @@
-﻿using System.Net.Sockets;
+﻿using System;
+using System.Linq;
+using System.Net.Sockets;
 
-using Borealis.Drivers.Rpi.Udp.Commands;
-using Borealis.Drivers.Rpi.Udp.Commands.Actions;
+using Borealis.Drivers.Rpi.Commands;
+using Borealis.Drivers.Rpi.Commands.Actions;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Connections;
+namespace Borealis.Drivers.Rpi.Connections;
 
 
 public class PortalConnectionFactory

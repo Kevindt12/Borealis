@@ -1,0 +1,24 @@
+﻿{
+  "WS2812B": {
+    "SpiMode": 0,
+    "DataBitLength": 8,
+    "ClockFrequency": 2400000,
+    "DataFlow": "LsbFirst",
+    "ChipSelectLineActiveState": "Low"
+  },
+  "WS2813": {
+    "SpiMode": 0,
+    "DataBitLength": 8,
+    "ClockFrequency": 2400000,
+    "DataFlow": "LsbFirst",
+    "ChipSelectLineActiveState": "Low"
+  },
+  "WS2815": {
+    "SpiMode": 0,
+    "DataBitLength": 8,
+    "ClockFrequency": 2400000,
+    "DataFlow": "LsbFirst",
+    "ChipSelectLineActiveState": "Low"
+  }
+
+}

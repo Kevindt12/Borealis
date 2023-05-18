@@ -1,9 +1,14 @@
-﻿namespace Borealis.Drivers.Rpi.Udp.Options;
+﻿using System;
+using System.Linq;
+
+
+
+namespace Borealis.Drivers.Rpi.Options;
 
 
 public class AnimationOptions
 {
-    public const string Name = "Aniatmion";
+    public const string Name = "Animation";
 
 
     /// <summary>

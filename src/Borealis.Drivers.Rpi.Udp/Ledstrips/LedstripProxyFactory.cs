@@ -1,13 +1,17 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 
-using Borealis.Domain.Devices;
-using Borealis.Domain.Effects;
-using Borealis.Drivers.Rpi.Udp.Exceptions;
 using Borealis.Shared.Extensions;
 
+using System.Linq;
+
+using Borealis.Domain.Devices;
+using Borealis.Domain.Ledstrips;
+using Borealis.Drivers.Rpi.Exceptions;
 
 
-namespace Borealis.Drivers.Rpi.Udp.Ledstrips;
+
+namespace Borealis.Drivers.Rpi.Ledstrips;
 
 
 /**

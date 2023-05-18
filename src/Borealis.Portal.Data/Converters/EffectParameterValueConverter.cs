@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Drawing;
+using System.Text.Json;
 
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -17,7 +18,29 @@ public class EffectParameterValueConverter : ValueConverter<object?, string?>
     {
         if (value is null) return null;
 
-        TypedObject obj = new TypedObject(value, JsonSerializer.Serialize(value));
+        TypedObject obj = default!;
+
+        if (value is Color color)
+        {
+            obj = new TypedObject
+            {
+                Type = "Color",
+                ObjectJson = JsonSerializer.Serialize(ColorObject.FromColor(color))
+            };
+        }
+        else if (value is IEnumerable<Color> colors)
+        {
+            obj = new TypedObject
+            {
+                Type = "Colors",
+                ObjectJson = JsonSerializer.Serialize(colors.Select(ColorObject.FromColor))
+            };
+        }
+        else
+        {
+            obj = new TypedObject(value, JsonSerializer.Serialize(value));
+        }
+
         string json = JsonSerializer.Serialize(obj);
 
         return json;
@@ -30,7 +53,20 @@ public class EffectParameterValueConverter : ValueConverter<object?, string?>
 
         TypedObject typedObj = JsonSerializer.Deserialize<TypedObject>(json)!;
 
-        object? result = JsonSerializer.Deserialize(typedObj.ObjectJson, Type.GetType(typedObj.Type)!);
+        object? result = null;
+
+        if (typedObj.Type == "Color")
+        {
+            result = JsonSerializer.Deserialize<ColorObject>(typedObj.ObjectJson)!.ToColor();
+        }
+        else if (typedObj.Type == "Colors")
+        {
+            result = JsonSerializer.Deserialize<List<ColorObject>>(typedObj.ObjectJson)!.Select(x => x.ToColor()).ToList();
+        }
+        else
+        {
+            result = JsonSerializer.Deserialize(typedObj.ObjectJson, Type.GetType(typedObj.Type)!);
+        }
 
         return result;
     }
@@ -52,5 +88,36 @@ public class EffectParameterValueConverter : ValueConverter<object?, string?>
         public string Type { get; set; }
 
         public string ObjectJson { get; set; }
+    }
+
+
+
+    private record ColorObject
+    {
+        public byte R { get; set; }
+
+        public byte G { get; set; }
+
+        public byte B { get; set; }
+
+        public byte A { get; set; }
+
+
+        public static ColorObject FromColor(Color color)
+        {
+            return new ColorObject
+            {
+                A = color.A,
+                R = color.R,
+                G = color.G,
+                B = color.B
+            };
+        }
+
+
+        public Color ToColor()
+        {
+            return Color.FromArgb(A, R, G, B);
+        }
     }
 }

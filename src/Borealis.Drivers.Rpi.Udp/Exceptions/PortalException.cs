@@ -1,8 +1,11 @@
-﻿using Borealis.Shared.Extensions;
+﻿using System;
+using System.Linq;
+
+using Borealis.Shared.Extensions;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Exceptions;
+namespace Borealis.Drivers.Rpi.Exceptions;
 
 
 public class PortalException : ApplicationException

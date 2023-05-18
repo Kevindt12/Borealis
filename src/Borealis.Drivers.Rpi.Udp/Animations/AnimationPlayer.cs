@@ -1,11 +1,12 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Linq;
 
-using Borealis.Domain.Effects;
-using Borealis.Drivers.Rpi.Udp.Commands;
-using Borealis.Drivers.Rpi.Udp.Commands.Actions;
-using Borealis.Drivers.Rpi.Udp.Exceptions;
-using Borealis.Drivers.Rpi.Udp.Ledstrips;
-using Borealis.Drivers.Rpi.Udp.Options;
+using Borealis.Drivers.Rpi.Commands;
+using Borealis.Drivers.Rpi.Commands.Actions;
+using Borealis.Drivers.Rpi.Exceptions;
+using Borealis.Drivers.Rpi.Ledstrips;
+using Borealis.Drivers.Rpi.Options;
 
 using Microsoft.Extensions.Options;
 
@@ -13,7 +14,7 @@ using UnitsNet;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Animations;
+namespace Borealis.Drivers.Rpi.Animations;
 
 
 public class AnimationPlayer
@@ -25,8 +26,7 @@ public class AnimationPlayer
     private readonly ConcurrentStack<ReadOnlyMemory<PixelColor>> _frameBuffer;
 
     private CancellationTokenSource? _stoppingToken;
-    private Task? _runningTask;
-
+    private Thread? _runningThread;
 
     private bool _requestInProgress;
 
@@ -79,11 +79,14 @@ public class AnimationPlayer
     /// The <see cref="ReadOnlyMemory{T}" /> of
     /// <see cref="PixelColor" /> the frames that we want to start with.
     /// </param>
-    /// <param name="cancellationToken"> A token to cancel the current operation. </param>
+    /// <param name="token"> A token to cancel the current operation. </param>
     /// <exception cref="InvalidOperationException"> Thrown when the animation has already started. </exception>
+    /// <exception cref="OperationCanceledException"> When the token has requested to stop the current operation. </exception>
     public virtual Task StartAsync(Frequency frequency, ReadOnlyMemory<PixelColor>[] initialFrameBuffer, CancellationToken token = default)
     {
-        if (_stoppingToken != null) throw new InvalidOperationException("The animation has already started.");
+        token.ThrowIfCancellationRequested();
+
+        if (IsRunning) throw new InvalidOperationException("The animation has already started.");
 
         Frequency = frequency;
 
@@ -94,16 +97,29 @@ public class AnimationPlayer
         // Starting the looping task.
         _logger.LogDebug($"Starting animation player at {frequency.Hertz}Hz, with initial frame buffer size of {_frameBuffer.Count}.");
         _stoppingToken = new CancellationTokenSource();
-        _runningTask = Task.Factory.StartNew(AnimationLoopingTaskHandler, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        _runningThread = CreateThread(AnimationLoopingThreadHandler);
+        _runningThread.Start();
 
         return Task.CompletedTask;
+    }
+
+
+    private Thread CreateThread(Action loop)
+    {
+        return new Thread(() => loop())
+        {
+            IsBackground = true,
+            Priority = ThreadPriority.Highest,
+            Name = $"{Guid.NewGuid()} - Animation Player"
+        };
     }
 
 
     /// <summary>
     /// The handler that is going to loop the animation and play it.
     /// </summary>
-    private async Task AnimationLoopingTaskHandler()
+    private void AnimationLoopingThreadHandler()
     {
         try
         {
@@ -132,7 +148,7 @@ public class AnimationPlayer
                 CheckStackBuffer();
 
                 // Start the delay untill the next frame.
-                await Task.Delay(waitTime);
+                Thread.Sleep(waitTime);
             }
         }
         catch (IOException e)
@@ -141,6 +157,12 @@ public class AnimationPlayer
 
             _stoppingToken!.Cancel();
             _stoppingToken = null;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error while playing animation,");
+
+            throw;
         }
     }
 
@@ -156,7 +178,7 @@ public class AnimationPlayer
             _requestInProgress = true;
 
             _logger.LogDebug("Starting new task to get the frames from the portal.");
-            Task.Factory.StartNew(StartRequestForFramesAsync, _stoppingToken!.Token, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            Task.Factory.StartNew(StartRequestForFramesAsync, _stoppingToken!.Token, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default).ConfigureAwait(false);
         }
     }
 
@@ -168,8 +190,8 @@ public class AnimationPlayer
     protected async Task StartRequestForFramesAsync()
     {
         // Calculating the target amount of frames.
-        int targetAmount = (int)(StackSize - _frameBuffer.Count * 1.3);
-        _logger.LogTrace($"Animation player starting request to get frames. Requesting {targetAmount} frames.");
+        int targetAmount = StackSize - _frameBuffer.Count;
+        _logger.LogTrace($"Animation player starting request to get frames. Requesting {targetAmount} frames. StackSize {StackSize}, FramebufferCount {_frameBuffer.Count}");
 
         try
         {
@@ -190,6 +212,13 @@ public class AnimationPlayer
             _logger.LogWarning(e, "There was a problem with the connection.");
             await StopAsync().ConfigureAwait(false);
         }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "There was a unknown error in the receiving of a frame buffer.");
+            await StopAsync().ConfigureAwait(false);
+
+            throw;
+        }
         finally
         {
             // Reset the flag that indicates that we are requesting for frames from the portal.
@@ -201,21 +230,23 @@ public class AnimationPlayer
     /// <summary>
     /// Stops the animation that is playing on the ledstrip.
     /// </summary>
-    /// <returns> </returns>
     /// <exception cref="InvalidOperationException"> The animation that we where playing. </exception>
-    public async Task StopAsync()
+    public Task StopAsync()
     {
-        if (_stoppingToken == null) throw new InvalidOperationException("Cannot stop a animation that has already stopped.");
+        if (_stoppingToken == null) return Task.FromException(new InvalidOperationException("Cannot stop a animation that has already stopped."));
 
         _logger.LogDebug("Stopping animation player.");
         _stoppingToken?.Cancel();
         _stoppingToken?.Dispose();
 
-        if (_runningTask != null)
+        if (_runningThread != null)
         {
-            await _runningTask.ConfigureAwait(false);
+            _runningThread.Join(100);
         }
 
         _stoppingToken = null;
+        _logger.LogTrace($"Stopped the animation player for {Ledstrip.Id}");
+
+        return Task.CompletedTask;
     }
 }

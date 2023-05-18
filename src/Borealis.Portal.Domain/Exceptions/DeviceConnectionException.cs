@@ -1,37 +1,15 @@
-﻿using Borealis.Portal.Domain.Devices;
-using Borealis.Shared.Extensions;
+﻿using Borealis.Portal.Domain.Devices.Models;
 
 
 
 namespace Borealis.Portal.Domain.Exceptions;
 
 
-public class DeviceConnectionException : ApplicationException
+/// <summary>
+/// A exception that has happens because of the connection with the device.
+/// </summary>
+public class DeviceConnectionException : DeviceException
 {
-    public Device? Device { get; init; }
-
-
-    /// <inheritdoc />
-    public DeviceConnectionException(Device? device)
-    {
-        Device = device;
-    }
-
-
-    /// <inheritdoc />
-    public DeviceConnectionException(String? message, Device? device) : base(message)
-    {
-        Device = device;
-    }
-
-
-    /// <inheritdoc />
-    public DeviceConnectionException(String? message, Exception? innerException, Device? device) : base(message, innerException)
-    {
-        Device = device;
-    }
-
-
     /// <inheritdoc />
     public DeviceConnectionException() { }
 
@@ -41,12 +19,17 @@ public class DeviceConnectionException : ApplicationException
 
 
     /// <inheritdoc />
-    public DeviceConnectionException(String? message, ExceptionInfo info) : base(message)
-    {
-        Data.Add("Exception Info", info);
-    }
+    public DeviceConnectionException(String? message, Exception? innerException) : base(message, innerException) { }
 
 
     /// <inheritdoc />
-    public DeviceConnectionException(String? message, Exception? innerException) : base(message, innerException) { }
+    public DeviceConnectionException(Device device) : base(device) { }
+
+
+    /// <inheritdoc />
+    public DeviceConnectionException(String? message, Device device) : base(message, device) { }
+
+
+    /// <inheritdoc />
+    public DeviceConnectionException(String? message, Exception? innerException, Device device) : base(message, innerException, device) { }
 }

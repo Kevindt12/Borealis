@@ -1,0 +1,207 @@
+namespace Borealis.Communication.Messages;
+
+
+
+
+/*
+
+Message process
+
+- Connect
+Portal    --->          ConnectRequest         --->    Driver     --->        ConnectReply       --->  Portal
+
+- Configuration
+Portal    --->      SetConfigurationRequest    --->    Driver     --->   SetConfigurationReply   --->  Portal
+
+- Start Animation
+Portal    --->      StartAnimationRequest      --->    Driver     --->   SuccessReply/ErrorReply --->  Portal
+
+- Animation Frame buffer
+Driver    --->      AnimationFBufferRequest    --->    Portal     --->    AnimationBufferReply    --->  Driver
+
+- Pause Animation
+Portal    --->      PauseAnimationRequest      --->    Driver     --->    SuccessReply/ErrorReply    --->  Portal
+
+- Stop Animation
+Portal    --->       StopAnimationRequest      --->    Driver     --->     SuccessReply/ErrorReply    --->  Portal
+
+- Set Ledstrip Color
+Portal    --->      SetLedstripColorRequest    --->    Driver     --->   SuccessReply/ErrorReply   --->  Portal
+
+- Clear Ledstrip 
+Portal    --->      SetLedstripColorRequest    --->    Driver     --->   SuccessReply/ErrorReply   --->  Portal
+
+- Get Driver status
+Portal    --->      GetDriverStatusRequest     --->    Driver     --->    GetDriverStatusReply   --->  Portal
+
+
+Notes
+  * All replies can have a ErrorReply except of there reply message indicating that there was an error.
+  * 
+
+*/
+
+
+//    ------    Enums     --------
+
+// The status of a ledstrip.
+enum LedstripStatus : uint8 {
+  IDLE = 0,
+  DISPALYING_FRAME = 1,
+  PAUSED = 2,
+  PLAYING = 3
+}
+
+// The chip used on the ledstrip. Note the first one should always throw errors on both sides.
+enum LedstripChip : uint8 {
+    DEFAULT = 0,
+    WS2812B = 1,
+    WS2813 = 2,
+    WS2815 = 3,
+    APA102 = 4,
+    SK6812 = 5,
+    SK9822 = 6
+}
+
+enum ErrorIds : int16 {
+  UNKNOWNERROR = 0,
+  INTERNALERROR = 500,
+  CONFIGURATIONERROR = 600
+}
+
+//    --------    The Models     -------
+
+table LedstripStatusMessage {
+  ledstrip_id: string;
+  ledstrip_status: LedstripStatus;
+}
+
+
+table ConfigurationMessage {
+  ledstrips : [LedstripMessage];
+}
+
+table LedstripMessage {
+  bus_id: uint8;
+  ledstrip_id: string;
+  pixel_count: uint16;
+  chip: LedstripChip;
+}
+
+
+table FrameMessage {
+  pixels: [PixelMessage];
+}
+
+table PixelMessage {
+  r: uint8;
+  g: uint8;
+  b: uint8;
+  w: uint8;
+}
+
+
+
+
+//    -------- The Messages     --------
+
+// Connect messages
+// ID: 1
+table ConnectRequest {
+  configuration_concurrency_token: string;
+}
+
+// ID: 2
+table ConnectReply {
+  configuration_concurrency_token_valid: bool;
+}
+
+
+// Set Configuration
+// ID: 5
+table SetConfigurationRequest {
+  concurrency_token: string;
+  configuration: ConfigurationMessage;
+}
+
+// ID: 6 
+table SetConfigurationReply {
+  success: bool;
+  error_message: string;
+}
+
+
+// Start Animation
+// ID: 100
+table StartAnimationRequest {
+  ledstrip_id: string;
+  frequency: float32;
+  initial_frame_buffer: [FrameMessage];
+}
+
+
+// Pause Animation
+// ID: 105
+table PauseAnimationRequest {
+  ledstrip_id: string;
+}
+
+
+// Stop Animation
+// ID: 110
+table StopAnimationRequest {
+  ledstrip_id: string;
+
+}
+
+// Animation Buffer Request
+// ID: 120
+table AnimationBufferRequest {
+  ledstrip_id: string;
+  frame_count: uint16;
+
+}
+
+// ID: 121
+table AnimationBufferReply {
+  frame_buffer: [FrameMessage];
+}
+
+
+// Set Ledstrip color
+// ID: 150
+table SetLedstripColorRequest {
+  ledstrip_id: string;
+  frame: FrameMessage;
+}
+
+// ID: 160
+table ClearLedstripRequest{
+  ledstrip_id: string;
+}
+
+// Get driver status
+// ID: 250
+table GetDriverStatusRequest {
+  // Note if ledstrip id is empty it should return for all ledstrips.
+  ledstrip_id: string;
+}
+
+// ID: 251
+table GetDriverStatusReply {
+  ledstrip_statuses: [LedstripStatusMessage];
+}
+
+
+// Standard Replies
+
+// ID: 255
+table ErrorReply {
+  error_id: ErrorIds;
+  message: string;
+}
+
+// ID: 254
+table SuccessReply {
+
+}

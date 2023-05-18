@@ -1,15 +1,21 @@
 ﻿@page "/"
-@using Borealis.Domain.Devices
-@using Borealis.Portal.Domain.Animations
+@using Borealis.Portal.Domain.Devices.Managers
 @using Borealis.Portal.Domain.Devices
-@using MudBlazor
-
-@using Borealis.Portal.Web.Components
-
-@using Animation = Borealis.Domain.Animations.Animation
+@using Borealis.Portal.Domain.Devices.Models
+@using Borealis.Domain.Ledstrips
+@using Borealis.Portal.Domain.Devices.Services
+@using Borealis.Portal.Domain.Ledstrips.Services
+@using Microsoft.AspNetCore.Components
+@using Borealis.Domain.Effects
 
 @* ReSharper disable InconsistentNaming | This is because i want to threat them as fields. I know this is just a autistic thing.*@
-@inject IDeviceManager _DeviceManager
+@inject ILogger<Index> _logger
+@inject ISnackbar _snackbar
+@inject IDialogService _dialogService
+
+@inject IDeviceManager _deviceManager
+@inject ILedstripService _ledstripService
+@inject IDeviceService _deviceService
 @* ReSharper restore InconsistentNaming *@
 
 
@@ -21,31 +27,83 @@
     {
         @* Each Device *@
         <MudItem lg="4" md="6" sm="12" xs="12">
-            <IndexDeviceComponent Device="@device"/>
+
+            <MudPaper Outlined="true" Class="pa-2">
+
+                @* Device Title Text*@
+                <MudStack Class="py-2" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                    <MudText Class="pa-2" Typo="Typo.h4">@device.Name</MudText>
+                </MudStack>
+
+                @* The Attached ports . *@
+                <MudStack>
+                    @foreach (DevicePort port in device.Ports.Where(x => x.Ledstrip != null))
+                    {
+                        <MudDivider DividerType="DividerType.Inset" FlexItem="true" Absolute />
+                        @* Prevents Enumeration outside of scope. *@
+                        <MudText Class="py-1 px-3" Align="Align.Left" Typo="Typo.subtitle2">@port.Ledstrip!.Name</MudText>
+
+                        <MudPaper Outlined="true" Class="pa-1">
+                            <MudStack Row="true">
+
+                                @* The animation selection. *@
+                                <MudSelect Variant="Variant.Outlined" 
+                                           Dense="true" 
+                                           T="Effect" 
+                                           Class="pa-1" 
+                                           Disabled="@CanEffectBeChangedOnLedstrip(port)" 
+                                           Value="@GetSelectedEffectByLedstrip(port.Ledstrip)" 
+                                           ValueChanged="value => OnDevicePortEffectChangedAsync(port, value)">
+                                    @foreach (Effect effect in Effects)
+                                    {
+                                        <MudSelectItem T="Effect" Value="effect">@effect.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                
+
+                                @* The action buttons. *@
+                                <MudButtonGroup Class=" px-1 py-4" DisableElevation="true" Size="Size.Small" Variant="Variant.Filled">
+
+                                    @if (IsDevicePortActive(port))
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.Pause"
+                                           Variant="Variant.Outlined"
+                                           Disabled="@(CanLedstripBePaused(port))"
+                                           Color="@Color.Error"
+                                           OnClick="@(() => OnPauseLedstripAsync(port))" />
+                                    }
+                                    else
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.PlayArrow"
+                                           Variant="Variant.Outlined"
+                                           Disabled="@(CanEffectBeStartedOnLedstrip(port))"
+                                           Color="@Color.Primary"
+                                           OnClick="@(() => OnStartAnimationOnLedstripAsync(port))" />
+                                    }
+
+
+                                    <MudIconButton Icon="@Icons.Material.Filled.Colorize"
+                                           Variant="Variant.Outlined"
+                                           Disabled="@(!CanColorBeDisplayedOnLedstrip(port))"
+                                           Color="Color.Primary"
+                                           OnClick="@(() => OnShowColorOnLedstripAsync(port))" />
+
+                                    <MudIconButton Icon="@Icons.Material.Filled.Settings"
+                                           Variant="Variant.Filled"
+                                           Disabled="@(CanEffectSettingsBeChangedOnLedstrip(port))"
+                                           OnClick="() => OnChangeEffectParametersOnLedstripAsync(port)"
+                                           Color="Color.Primary" />
+                                </MudButtonGroup>
+
+                            </MudStack>
+                        </MudPaper>
+                    }
+                </MudStack>
+            </MudPaper>
+
+
+
         </MudItem>
     }
 </MudGrid>
 
-
-@code
-{
-
-    /// <summary>
-    /// The devices that we have in the application.
-    /// </summary>
-    protected IReadOnlyList<Device> Devices { get; set; } = new List<Device>();
-
-    
-
-    /// <inheritdoc />
-    protected override async Task OnParametersSetAsync()
-    {
-        Devices = new List<Device>(await _DeviceManager.GetDevicesAsync());
-
-        await base.OnParametersSetAsync();
-    }
-
-    
-
-
-}

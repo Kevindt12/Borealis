@@ -1,0 +1,11 @@
+﻿{
+  "ConcurrencyToken": "GEp1k1",
+  "Ledstrips": [
+    {
+      "Id": "e7f96ea4-0a6f-4899-ae9a-5b50d2301ba5",
+      "Bus": 0,
+      "PixelCount": 450,
+      "Chip": 1
+    }
+  ]
+}

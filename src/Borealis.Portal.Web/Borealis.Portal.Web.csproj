@@ -4,11 +4,18 @@
 	  <TargetFramework>net7.0</TargetFramework>
 	  <Nullable>enable</Nullable>
 	  <ImplicitUsings>enable</ImplicitUsings>
+
+
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\Javascript\EffectEfiileBoilerplate.js" />
+    <None Remove="Resources\Javascript\EffectJavascriptBaseLibrary.js" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BlazorMonaco" Version="2.1.0" />
-    <PackageReference Include="MudBlazor" Version="6.0.18" />
+    <PackageReference Include="MudBlazor" Version="6.2.0" />
     <PackageReference Include="NLog" Version="5.0.5" />
     <PackageReference Include="NLog.Extensions.Logging" Version="5.1.0" />
     <PackageReference Include="UnitsNet" Version="4.149.0" />
@@ -17,6 +24,7 @@
 
   <ItemGroup>
     <Folder Include="Extensions\" />
+    <Folder Include="Models\Effects\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,9 +37,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <_ContentIncludedByDefault Remove="Components\Devices\EditDevicePortDialog.razor" />
     <_ContentIncludedByDefault Remove="Components\EffectParameterRow.razor" />
     <_ContentIncludedByDefault Remove="Components\EffectParameterValueField.razor" />
+    <_ContentIncludedByDefault Remove="Components\Effects\CreateEffectDialog.razor" />
+    <_ContentIncludedByDefault Remove="Components\Effects\EditEffectParametersDialog.razor" />
     <_ContentIncludedByDefault Remove="Components\IndexDeviceLedstripComponent.razor" />
+    <_ContentIncludedByDefault Remove="Components\Ledstrips\EditLedstripDialog.razor" />
     <_ContentIncludedByDefault Remove="Pages\EffectsPage.razor" />
   </ItemGroup>
 
@@ -51,6 +63,34 @@
     <Content Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Components\Ledstrips\EditLedstripDialog.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Components\Devices\EditDevicePortDialog.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Components\Effects\EditEffectParametersDialog.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\Javascript\EffectEfiileBoilerplate.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\Javascript\EffectJavascriptBaseLibrary.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Components\Effects\CreateEffectDialog.razor" />
   </ItemGroup>
 
 </Project>

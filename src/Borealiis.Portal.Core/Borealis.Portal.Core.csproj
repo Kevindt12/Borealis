@@ -10,11 +10,18 @@
     <ProjectReference Include="..\Borealis.Portal.Data\Borealis.Portal.Data.csproj" />
     <ProjectReference Include="..\Borealis.Portal.Domain\Borealis.Portal.Domain.csproj" />
     <ProjectReference Include="..\Borealis.Portal.Infrastructure\Borealis.Portal.Infrastructure.csproj" />
+    <ProjectReference Include="..\Borealis.Shared\Borealis.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Devices\Factories\" />
+    <Folder Include="Devices\State\" />
     <Folder Include="Exceptions\" />
-    <Folder Include="Extensions\" />
+    <Folder Include="Ledstrips\Managers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\.editorconfig" Link=".editorconfig" />
   </ItemGroup>
 
   <ItemGroup>

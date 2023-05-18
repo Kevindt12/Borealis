@@ -20,8 +20,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Borealis.Domain\Borealis.Domain.csproj" />
     <ProjectReference Include="..\Borealis.Portal.Domain\Borealis.Portal.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Entities\" />
   </ItemGroup>
 
 </Project>

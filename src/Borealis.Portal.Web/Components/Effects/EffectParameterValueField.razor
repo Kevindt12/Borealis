@@ -1,0 +1,256 @@
+﻿@using Borealis.Domain.Effects
+@using MudBlazor.Extensions
+@using MudBlazor.Utilities
+
+@using Color = System.Drawing.Color
+
+@switch (ParameterType)
+{
+    case EffectParameterType.Text:
+
+        <MudTextField T="string" Class="@Class" Margin="@Margin" Variant="@Variant" Value="@_text" ValueChanged="OnTextValueChangedAsync"></MudTextField>
+
+
+        break;
+    case EffectParameterType.Number:
+
+        <MudNumericField T="double?" Class="@Class" Margin="@Margin" Label="@Label" Variant="@Variant" Value="@_number" ValueChanged="OnNumberValueChangedAsync"></MudNumericField>
+
+        break;
+    case EffectParameterType.Boolean:
+
+        <MudSelect T="bool?" Class="@Class" Margin="@Margin" Label="@Label" Variant="@Variant" Value="@_boolean" ValueChanged="OnBooleanValueChangedAsync">
+            <MudSelectItem T="bool?" Value="null"></MudSelectItem>
+            <MudSelectItem T="bool?" Value="true">True</MudSelectItem>
+            <MudSelectItem T="bool?" Value="false">False</MudSelectItem>
+
+        </MudSelect>
+
+        break;
+    case EffectParameterType.Color:
+        <MudColorPicker Label="@Label" Value="@_color" Margin="@Margin" ValueChanged="OnColorValueChangedAsync" Style="@($"color: {_color};")" Placeholder="@Placeholder" />
+
+
+        break;
+    case EffectParameterType.ColorArray:
+
+        <MudPaper Class="d-flex">
+
+
+            <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" OnClick="@ToggleColorArrayOpenAsync">
+                Colors : @_colors.Count()
+            </MudButton>
+
+            <MudPopover Open="@_isColorArrayOpen" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopRight">
+                <MudStack Class="d-flex flex-column pa-1">
+
+
+                    @for (int i = 0; i < _colors.Count; i++)
+                    {
+                        MudColor color = _colors[i];
+                        int index = i;
+                        <MudStack Class="d-flex pa-1" Row="true">
+                            <MudColorPicker Label="@($"Color {index}")" ColorPickerView="ColorPickerView.Spectrum" DisableAlpha="true" Value="color" ValueChanged="value => ColorArrayValueChangedAsync(index, value)" />
+                            <MudIconButton Size="Size.Small" Class="pa-1" Icon="@Icons.Material.Filled.Delete" OnClick="() => RemoveColorAsync(color)" />
+                        </MudStack>
+                    }
+                    <MudButton OnClick="@AddColor" Color="MudBlazor.Color.Primary">Add another line</MudButton>
+                </MudStack>
+            </MudPopover>
+        </MudPaper>
+        break;
+
+}
+
+
+
+
+
+@code {
+
+
+
+    private string? _text;
+    private double? _number;
+    private bool? _boolean;
+    private MudColor? _color;
+    private IList<MudColor> _colors = new List<MudColor>();
+
+    private int _indexCounter = 0;
+
+    private bool _isColorArrayOpen;
+
+
+    [Parameter]
+    public Variant Variant { get; set; }
+
+    [Parameter]
+    public string Class { get; set; } = String.Empty;
+
+    [Parameter]
+    public Margin Margin { get; set; }
+
+    [Parameter]
+    public string Label { get; set; } = String.Empty;
+
+    [Parameter]
+    public string Placeholder { get; set; } = String.Empty;
+
+    [Parameter]
+    public int Denounce { get; set; }
+
+
+    [Parameter]
+    public EffectParameterType ParameterType { get; set; }
+
+    [Parameter]
+    public object? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<object?> ValueChanged { get; set; }
+
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        switch (ParameterType)
+        {
+            case EffectParameterType.Text:
+                if (Value is not string)
+                {
+                    Value = _text;
+                }
+                _text = Value.As<string?>();
+                break;
+            case EffectParameterType.Number:
+                if (Value is not Double)
+                {
+                    Value = _number;
+                }
+                _number = Value.As<Double?>();
+                break;
+            case EffectParameterType.Boolean:
+                if (Value is not bool)
+                {
+                    Value = _boolean;
+                }
+                _boolean = Value.As<bool?>();
+                break;
+            case EffectParameterType.Color:
+                if (Value is not Color)
+                {
+                    Value = _color;
+                }
+                if (Value == null)
+                {
+                    _color = null;
+                    break;
+                }
+                _color = ConvertColor((Color)Value);
+                break;
+            case EffectParameterType.ColorArray:
+                if (Value is not IEnumerable<Color>)
+                {
+                    Value = _colors;
+                }
+                if (Value == null)
+                {
+                    _colors = new List<MudColor>();
+                    break;
+                }
+                _colors = ((IList<Color>)Value!).Select(ConvertColor).ToList();
+                break;
+
+        }
+    }
+
+
+    protected virtual async Task OnTextValueChangedAsync(String? value)
+    {
+        _text = value;
+        Value = value;
+        await ValueChanged.InvokeAsync(value);
+    }
+
+
+
+    protected virtual async Task OnNumberValueChangedAsync(double? value)
+    {
+        _number = value;
+        Value = value;
+        await ValueChanged.InvokeAsync(value);
+    }
+
+
+    protected virtual async Task OnBooleanValueChangedAsync(bool? value)
+    {
+        _boolean = value;
+        Value = value;
+        await ValueChanged.InvokeAsync(value);
+    }
+
+
+    protected virtual async Task OnColorValueChangedAsync(MudColor? value)
+    {
+        _color = value;
+
+        //if (String.IsNullOrEmpty(value))
+        //{
+        //    Value = null;
+        //    await ValueChanged.InvokeAsync(null);
+        //    return;
+        //}
+
+        Value = value == null ? null : ConvertMudColor(value);
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+
+    protected virtual async Task ToggleColorArrayOpenAsync()
+    {
+        _isColorArrayOpen = !_isColorArrayOpen;
+
+        // If its now closed.
+        if (_isColorArrayOpen == false)
+        {
+            Value = _colors.Select(ConvertMudColor).ToList();
+            await ValueChanged.InvokeAsync(_colors.Select(ConvertMudColor).ToList());
+        }
+
+    }
+
+
+    protected virtual void AddColor()
+    {
+        _colors.Add(ConvertColor(Color.Black));
+    }
+
+
+    protected virtual async Task ColorArrayValueChangedAsync(int index, MudColor color)
+    {
+        _colors[index] = color;
+        await ValueChanged.InvokeAsync(_colors.Select(ConvertMudColor).ToList());
+    }
+
+
+
+    protected virtual async Task RemoveColorAsync(MudColor color)
+    {
+        _colors.Remove(color);
+        await ValueChanged.InvokeAsync(_colors.Select(ConvertMudColor).ToList());
+    }
+
+
+    private MudColor ConvertColor(Color color)
+    {
+        return new MudColor(color.R, color.G, color.B, color.A);
+    }
+
+
+    private Color ConvertMudColor(MudColor color)
+    {
+        return Color.FromArgb(color.A, color.R, color.G, color.B);
+    }
+
+
+}

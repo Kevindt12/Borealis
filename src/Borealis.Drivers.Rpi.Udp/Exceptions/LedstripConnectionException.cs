@@ -1,8 +1,11 @@
-﻿using Borealis.Domain.Devices;
+﻿using System;
+using System.Linq;
+
+using Borealis.Domain.Ledstrips;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Exceptions;
+namespace Borealis.Drivers.Rpi.Exceptions;
 
 
 public class LedstripConnectionException : ApplicationException

@@ -1,8 +1,10 @@
-﻿using System.Net;
+﻿using System;
+using System.Linq;
+using System.Net;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Commands.Actions;
+namespace Borealis.Drivers.Rpi.Commands.Actions;
 
 
 public record ConnectCommand

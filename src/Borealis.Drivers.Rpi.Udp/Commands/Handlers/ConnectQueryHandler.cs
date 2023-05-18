@@ -1,10 +1,13 @@
-﻿using Borealis.Domain.Devices;
-using Borealis.Drivers.Rpi.Udp.Commands.Actions;
-using Borealis.Drivers.Rpi.Udp.Services;
+﻿using System;
+using System.Linq;
+
+using Borealis.Domain.Devices;
+using Borealis.Drivers.Rpi.Commands.Actions;
+using Borealis.Drivers.Rpi.Services;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Commands.Handlers;
+namespace Borealis.Drivers.Rpi.Commands.Handlers;
 
 
 public class ConnectQueryHandler : IQueryHandler<ConnectCommand, ConnectedQuery>
@@ -26,12 +29,12 @@ public class ConnectQueryHandler : IQueryHandler<ConnectCommand, ConnectedQuery>
     public async Task<ConnectedQuery> Execute(ConnectCommand command)
     {
         _logger.LogInformation($"Handling connection request from client {command.RemoteConnection}.");
-        LedstripSettings settings = await _settingsService.ReadLedstripSettingsAsync().ConfigureAwait(false);
+        DeviceConfiguration configuration = await _settingsService.ReadLedstripSettingsAsync().ConfigureAwait(false);
 
         ConnectedQuery resultQuery = new ConnectedQuery
         {
             // Checking if the configuration is still the same.
-            IsConfigurationValid = settings.Token == command.ConfigurationConcurrencyToken
+            IsConfigurationValid = configuration.Token == command.ConfigurationConcurrencyToken
         };
 
         _logger.LogDebug($"Checking if the configuration is still valid. Result {resultQuery.IsConfigurationValid}");

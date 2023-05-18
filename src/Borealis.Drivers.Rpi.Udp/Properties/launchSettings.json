@@ -1,11 +1,31 @@
-﻿{
+{
   "profiles": {
     "Borealis.Drivers.Rpi.Udp": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
-      }
+      },
+      "dotnetRunMessages": true,
+      "remoteDebugEnabled": false,
+      "authenticationMode": "Windows",
+      "hotReloadEnabled": false
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "distributionName": ""
+    },
+    "Windows Terminal": {
+      "commandName": "Executable",
+      "executablePath": "$(userprofile)\\AppData\\Local\\Microsoft\\WindowsApps\\wt.exe",
+      "commandLineArgs": "dotnet.exe run –Project $(projectpath)",
+      "workingDirectory": "$(projectdir)",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "nativeDebugging": false
     }
   }
 }

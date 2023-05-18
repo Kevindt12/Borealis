@@ -1,22 +1,22 @@
 using System;
 using System.Linq;
 
-using Borealis.Drivers.Rpi.Udp.Animations;
-using Borealis.Drivers.Rpi.Udp.Commands;
-using Borealis.Drivers.Rpi.Udp.Commands.Actions;
-using Borealis.Drivers.Rpi.Udp.Commands.Handlers;
-using Borealis.Drivers.Rpi.Udp.Connections;
-using Borealis.Drivers.Rpi.Udp.Contexts;
-using Borealis.Drivers.Rpi.Udp.Ledstrips;
-using Borealis.Drivers.Rpi.Udp.Options;
-using Borealis.Drivers.Rpi.Udp.Services;
+using Borealis.Drivers.Rpi.Animations;
+using Borealis.Drivers.Rpi.Commands;
+using Borealis.Drivers.Rpi.Commands.Actions;
+using Borealis.Drivers.Rpi.Commands.Handlers;
+using Borealis.Drivers.Rpi.Connections;
+using Borealis.Drivers.Rpi.Contexts;
+using Borealis.Drivers.Rpi.Ledstrips;
+using Borealis.Drivers.Rpi.Options;
+using Borealis.Drivers.Rpi.Services;
 
 using NLog;
 using NLog.Extensions.Logging;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp;
+namespace Borealis.Drivers.Rpi;
 
 
 public static class Program

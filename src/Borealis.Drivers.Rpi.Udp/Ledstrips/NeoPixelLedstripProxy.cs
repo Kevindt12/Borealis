@@ -2,15 +2,14 @@
 using System.Device.Spi;
 using System.Linq;
 
-using Borealis.Domain.Devices;
-using Borealis.Domain.Effects;
-using Borealis.Drivers.Rpi.Udp.Exceptions;
+using Borealis.Domain.Ledstrips;
+using Borealis.Drivers.Rpi.Exceptions;
 
 using Iot.Device.Ws28xx;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Ledstrips;
+namespace Borealis.Drivers.Rpi.Ledstrips;
 
 
 public sealed class NeoPixelStandardLedstripProxy : LedstripProxyBase, IDisposable
@@ -35,7 +34,7 @@ public sealed class NeoPixelStandardLedstripProxy : LedstripProxyBase, IDisposab
         _device = CreateSpiDevice(ledstrip);
 
         // Setting up the driver that we will use.
-        _driver = new Ws2812b(_device, ledstrip.Length);
+        _driver = new Ws2815b(_device, ledstrip.Length);
 
         PlayStartup();
     }

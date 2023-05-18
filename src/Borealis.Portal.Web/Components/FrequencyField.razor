@@ -2,10 +2,10 @@
 @using MudBlazor
 @using UnitsNet.Units
 
-<MudStack Row="true" Class="Class" Spacing="-1" AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
+<MudStack Row="true" Class="@Class" Spacing="-1" Style="width: 400px" AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
 
-    <MudNumericField T="double" @bind-Value="Value" Disabled="Disabled" ReadOnly="ReadOnly" MaxLength="MaxLength" Label="Label" AutoFocus="AutoFocus" FullWidth="FullWidth" HelperText="@HelperText" HelperTextOnFocus="HelperTextOnFocus" Variant="Variant" Placeholder="Placeholdercou" Counter="Counter"></MudNumericField>
-    <MudSelect T="FrequencyUnit" @bind-Value="Unit">
+    <MudNumericField T="double" Value="@Frequency.Value" ValueChanged="OnNumericValueChanged" Disabled="@Disabled" ReadOnly="@ReadOnly" Label="@Label" AutoFocus="@AutoFocus"  HelperText="@HelperText" HelperTextOnFocus="HelperTextOnFocus" Variant="@Variant" Counter="@Counter"></MudNumericField>
+    <MudSelect T="FrequencyUnit" Value="@Frequency.Unit" Style="Width:40%" ValueChanged="OnFrequencyUnitChanged" Disabled="@Disabled" Variant="@Variant" >
         @foreach (FrequencyUnit unit in Enum.GetValuesAsUnderlyingType(typeof(FrequencyUnit)))
         {
             <MudSelectItem T="FrequencyUnit" Value="unit">@unit</MudSelectItem>
@@ -103,7 +103,6 @@
     public bool AutoFocus { get; set; }
 
 
-
     [Parameter]
     public Frequency Frequency { get; set; }
 
@@ -111,20 +110,30 @@
     public EventCallback<Frequency> FrequencyChanged { get; set; }
 
 
-    public FrequencyUnit Unit { get; set; }
+    public FrequencyUnit Unit { get; set; } = Frequency.BaseUnit;
+    
+    public double Value { get; set; }
 
 
-    public double Value
+    private async Task OnNumericValueChanged(Double obj)
     {
-        get
-        {
-            return Frequency.As(Unit);
-        }
-        set
-        {
-            Frequency = Frequency.From(value, Unit);
-            FrequencyChanged.InvokeAsync(Frequency);
-        }
+        Value = obj;
+        Frequency = Frequency.From(obj, Unit);
+
+        await FrequencyChanged.InvokeAsync(Frequency);
     }
+
+
+    private async Task OnFrequencyUnitChanged(FrequencyUnit obj)
+    {
+        Unit = obj;
+        Value = Frequency.As(obj);
+
+        Frequency = Frequency.From(Value, obj);
+
+        await FrequencyChanged.InvokeAsync(Frequency);
+
+    }
+
 
 }

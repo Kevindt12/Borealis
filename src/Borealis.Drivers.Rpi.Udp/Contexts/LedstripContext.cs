@@ -2,12 +2,13 @@
 using System.Linq;
 
 using Borealis.Domain.Devices;
-using Borealis.Drivers.Rpi.Udp.Exceptions;
-using Borealis.Drivers.Rpi.Udp.Ledstrips;
+using Borealis.Domain.Ledstrips;
+using Borealis.Drivers.Rpi.Exceptions;
+using Borealis.Drivers.Rpi.Ledstrips;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Contexts;
+namespace Borealis.Drivers.Rpi.Contexts;
 
 
 public sealed class LedstripContext : IDisposable
@@ -44,7 +45,7 @@ public sealed class LedstripContext : IDisposable
     /// Sets the ledstrip configuration that was given.
     /// </summary>
     /// <param name="configuration"> The configuration that was given. </param>
-    public void SetConfiguration(LedstripSettings configuration)
+    public void SetConfiguration(DeviceConfiguration configuration)
     {
         // If there are any ledstrips running then clean them up.
         if (_ledstrips.Any())

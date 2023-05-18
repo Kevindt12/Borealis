@@ -1,0 +1,110 @@
+﻿@page "/Devices"
+@using Borealis.Portal.Domain.Devices.Managers
+@using Borealis.Portal.Domain.Devices.Services
+@using Borealis.Portal.Domain.Exceptions
+@using Borealis.Portal.Web.Extensions
+@using System.Net
+@using Borealis.Portal.Domain.Devices
+@using Borealis.Portal.Domain.Devices.Models
+@using Microsoft.EntityFrameworkCore
+
+
+@*
+    TODO: Exception throw when adding a new devices. A null reference exception.
+
+*@
+
+@* ReSharper disable InconsistentNaming | This is because i want to threat them as fields. I know this is just a autistic thing.*@
+@inject ILogger<DevicesPage> _logger
+
+@inject IDeviceManager _deviceManager
+@inject IDeviceService _deviceService
+
+@inject NavigationManager _NavigationManager
+@inject ISnackbar _snackbar
+@* ReSharper restore InconsistentNaming *@
+
+<PageTitle>Devices</PageTitle>
+
+@* The action buttons. *@
+<MudStack Class="py-4" AlignItems="AlignItems.Start" Justify="Justify.SpaceBetween" Row="true">
+    <MudButton Class="pa-2"
+               Size="Size.Small"
+               Color="Color.Primary"
+               Variant="Variant.Filled"
+               StartIcon="@Icons.Material.Filled.Add"
+               OnClick="NavigateToNewDevicePage">Add</MudButton>
+</MudStack>
+
+
+@* The card for each device *@
+<MudGrid Class="pa-2">
+
+    @foreach (Device device in Devices)
+    {
+        // Checks if the device is connected.
+        bool connected = _deviceService.IsConnected(device);
+
+        @* Each device. *@
+        <MudItem md="4">
+            <MudCard Elevation="2" Outlined="true" Class="pa-2">
+                <MudCardHeader>
+                    @* The name and edit button. *@
+                    <CardHeaderContent>
+                        <MudText Class="pa-2" Align="Align.Center" Typo="Typo.h4"> @device.Name </MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Default" OnClick="() => NavigateToEditDevicePage(device)" />
+                    </CardHeaderActions>
+
+                </MudCardHeader>
+                <MudCardContent>
+
+                    @* The details. *@
+                    <MudText Class="pa-1" Typo="Typo.body2">Details</MudText>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText Class="pa-1" Typo="Typo.subtitle2">IP Address</MudText>
+                        <MudText Class="pa-1" Typo="Typo.subtitle2">@device.EndPoint.ToString()</MudText>
+                    </MudStack>
+
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText Class="pa-1" Typo="Typo.subtitle2">Auto Connect</MudText>
+                        <MudText Class="pa-1" Typo="Typo.subtitle2">@(device.AutoConnect ? "Yes" : "No")</MudText>
+                        </MudStack>
+
+                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                            <MudText Class="pa-1" Typo="Typo.subtitle2">Connection</MudText>
+                        </MudStack>
+
+                        @*The divider. *@
+                        <MudStack Class="pa-2">
+                            <MudDivider DividerType="DividerType.Inset" FlexItem="true" />
+                        </MudStack>
+
+                </MudCardContent>
+                <MudCardActions>
+                    
+                    @* The connect button and the edit configuration button. *@
+                    <MudStack Row="true" Class="pa-2">
+                        <MudButton Class="pa-4"
+                               Variant="Variant.Filled"
+                               Color="@(connected ? Color.Success : Color.Primary)"
+                               OnClick="@(() => connected ? DisconnectAsync(device) : ConnectAsync(device))">
+                            @(connected ? "Disconnect" : "Connect")
+                        </MudButton>
+                        <MudButton Class="pa-4" OnClick="@(() => _NavigationManager.NavigateTo($"/Devices/Edit/{device.Id}"))" Variant="Variant.Outlined" Color="Color.Primary">Edit Configuration</MudButton>
+                    </MudStack>
+                </MudCardActions>
+            </MudCard>
+
+
+        </MudItem>
+
+
+
+    }
+</MudGrid>
+
+
+
+

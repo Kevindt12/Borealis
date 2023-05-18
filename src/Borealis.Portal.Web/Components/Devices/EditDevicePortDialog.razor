@@ -1,0 +1,26 @@
+﻿@using Borealis.Domain.Ledstrips
+@using Borealis.Portal.Domain.Ledstrips.Managers
+@using Microsoft.AspNetCore.Components
+
+
+
+@inject ILedstripManager _ledstripManager
+
+<MudDialog>
+    <DialogContent>
+        <MudStack>
+            <MudNumericField T="@Byte" Class="pa-2" Label="Bus" Validation="@ValidateBus" @bind-Value="@Model.Bus" />
+            <MudSelect T="@Ledstrip" Class="pa-2" Label="Ledstrip" @bind-Value="@Model.Ledstrip" >
+                @foreach (Ledstrip ledstrip in SelectableLedstrips)
+                {
+                    <MudSelectItem T="@Ledstrip" Value="@ledstrip" >@ledstrip.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Class="pa-2" Variant="Variant.Filled" OnClick="Cancel" >Cancel</MudButton>
+        <MudButton Class="pa-2" Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" >Save</MudButton>
+    </DialogActions>
+</MudDialog>
+

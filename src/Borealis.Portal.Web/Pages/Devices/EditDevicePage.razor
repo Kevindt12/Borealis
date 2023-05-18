@@ -1,0 +1,135 @@
+﻿@page "/Devices/Edit/{DeviceId:guid}"
+@page "/Devices/New"
+@using Borealis.Portal.Domain.Devices.Managers
+@using Borealis.Portal.Domain.Devices.Services
+@using Borealis.Portal.Domain.Ledstrips.Managers
+@using Borealis.Domain.Ledstrips
+@using Borealis.Portal.Domain.Devices.Models
+@using MudBlazor;
+
+
+@*
+    * TODO: Redirecto to device page once done.
+
+*@
+
+
+@* ReSharper disable InconsistentNaming | This is because i want to threat them as fields. I know this is just a autistic thing.*@
+@inject ILogger<DevicesPage> _logger
+@inject ISnackbar _snackbar
+@inject IDialogService _dialogService
+
+@inject IDeviceManager _deviceManager
+@inject ILedstripManager _ledstripManager
+@inject IDeviceService _deviceService
+@* ReSharper restore InconsistentNaming *@
+
+<PageTitle>Edit Device</PageTitle>
+
+@* The action buttons. *@
+<MudStack Class="py-4" AlignItems="AlignItems.Start" Justify="Justify.FlexEnd" Row="true">
+
+    @* The connect or disconnect*@
+    <MudButton Class="pa-2"
+               Size="Size.Small"
+               Variant="Variant.Filled"
+               StartIcon="@Icons.Material.Filled.ConnectWithoutContact"
+               Color="Color.Success"
+               OnClick="@(Connected ? OnDisconnectAsync : OnConnectAsync)">Connect</MudButton>
+
+    @* The Upload button.*@
+    <MudButton Class="pa-2"
+               Size="Size.Small"
+               Variant="Variant.Filled"
+               StartIcon="@Icons.Material.Filled.Upload"
+               Disabled="@(!Connected)"
+               Color="Color.Primary"
+               OnClick="OnUploadAsync">Upload</MudButton>
+    @* The Save button, *@
+    <MudButton Class="pa-2 mr-5"
+               Size="Size.Small"
+               Variant="Variant.Filled"
+               StartIcon="@Icons.Material.Filled.Save"
+               Color="Color.Secondary"
+               OnClick="OnSaveAsync">Save</MudButton>
+
+</MudStack>
+
+@* Core input stack*@
+<MudStack Class="pa-4" Spacing="20">
+    <MudPaper Elevation="2">
+
+        <MudPaper Class="pa-2">
+            <MudText Class="pa-2" Typo="Typo.h5">Connection Details</MudText>
+            <MudTextField T="string"
+                          Label="Device Name"
+                          Class="pa-2"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          RequiredError="A name needs to be specified."
+                          Immediate="true"
+                          @bind-Value="@Device.Name" />
+
+            <MudStack Row="true">
+                <MudTextField T="string"
+                              Label="IP Address"
+                              Class="pa-2"
+                              Variant="Variant.Outlined"
+                              Mask="@_ipv4Mask"
+                              HelperText="@_ipv4Mask.Mask"
+                              FullWidth="true" T="string"
+                              Required="true"
+                              RequiredError="A IP Address needs to be specified."
+                              Immediate="false"
+                              @bind-Value="@IPAddressProxy" />
+
+                <MudNumericField T="int"
+                                 Label="Port"
+                                 Class="pa-2"
+                                 Variant="Variant.Outlined"
+                                 Required="true"
+                                 RequiredError="A port needs to be specified."
+                                 @bind-Value="@Device.EndPoint.Port" />
+            </MudStack>
+
+
+        </MudPaper>
+        <MudDivider Class="pa-2" DividerType="DividerType.FullWidth" FlexItem="true" />
+
+        <MudPaper Class="pa-2" Elevation="2">
+
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Class="pa-2" Typo="Typo.h5">Ports</MudText>
+                <MudIconButton Class="pa-1" Icon="@Icons.Material.Filled.Add" OnClick="OnAddDevicePortAsync" />
+            </MudStack>
+
+
+            <MudTable T="DevicePort" Elevation="0" Items="@Device.Ports" Hover="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>Bus</MudTh>
+                    <MudTh>Ledstrip</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Bus">@context.Bus</MudTd>
+                    <MudTd DataLabel="Ledstrip">@(context.Ledstrip?.Name ?? "None")</MudTd>
+                        <MudTd DataLabel="Actions">
+                            <MudStack Row="true" Justify="Justify.FlexEnd">
+
+                                <MudButtonGroup Variant="Variant.Filled">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="() => OnEditDevicePortAsync(context)" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Remove" OnClick="() => OnDeleteDevicePortAsync(context)" />
+                                </MudButtonGroup>
+                            </MudStack>
+
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+
+
+        </MudPaper>
+
+
+    </MudStack>

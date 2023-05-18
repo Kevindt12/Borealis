@@ -1,0 +1,50 @@
+﻿@using Microsoft.AspNetCore.Components
+@using MudBlazor.Utilities
+@using Borealis.Domain.Ledstrips
+@using Borealis.Portal.Domain.Common
+@using Borealis.Portal.Web.Models.Effects
+
+
+<MudDialog >
+    <TitleContent>
+        <MudText Typo="Typo.h6" >
+            <MudIcon Icon="@Icons.Material.Filled.Add" Class="mr-3"/> Add Effect
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @* TODO: Add validation to animation page.*@
+        <MudTextField T="string" Class="pa-4" Variant="Variant.Outlined" Label="Name" @bind-Value="@Model.EffectName" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Create" Class="px-10" >Create</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Close" Class="px-10" >Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+
+@code {
+
+    public CreateEffectDialogModel Model { get; set; } = new CreateEffectDialogModel();
+
+
+    [CascadingParameter]
+    protected MudDialogInstance MudDialog { get; set; }
+
+
+
+    protected void Close()
+    {
+        MudDialog.Cancel();
+    }
+
+
+    protected void Create()
+    {
+        MudDialog.Close(Model);
+    }
+
+
+
+
+}

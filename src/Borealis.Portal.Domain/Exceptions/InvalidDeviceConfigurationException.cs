@@ -1,13 +1,17 @@
-﻿using Borealis.Portal.Domain.Devices;
+﻿using Borealis.Portal.Domain.Devices.Models;
 
 
 
 namespace Borealis.Portal.Domain.Exceptions;
 
 
-public class InvalidDeviceConfigurationException : ApplicationException
+/// <summary>
+/// A exception because there is a issue with the device configuration.
+/// </summary>
+public class InvalidDeviceConfigurationException : DeviceException
 {
-    public Device? Device { get; set; }
+    /// <inheritdoc />
+    public InvalidDeviceConfigurationException(String? message) : base(message) { }
 
 
     /// <inheritdoc />
@@ -15,5 +19,13 @@ public class InvalidDeviceConfigurationException : ApplicationException
 
 
     /// <inheritdoc />
-    public InvalidDeviceConfigurationException(String? message) : base(message) { }
+    public InvalidDeviceConfigurationException(Device device) : base(device) { }
+
+
+    /// <inheritdoc />
+    public InvalidDeviceConfigurationException(String? message, Device device) : base(message, device) { }
+
+
+    /// <inheritdoc />
+    public InvalidDeviceConfigurationException(String? message, Exception? innerException, Device device) : base(message, innerException, device) { }
 }

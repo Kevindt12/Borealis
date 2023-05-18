@@ -1,11 +1,16 @@
-﻿using Borealis.Domain.Devices;
-using Borealis.Drivers.Rpi.Udp.Contexts;
-using Borealis.Portal.Domain.Exceptions;
+﻿using System;
+
 using Borealis.Shared.Extensions;
 
+using System.Linq;
+
+using Borealis.Domain.Devices;
+using Borealis.Drivers.Rpi.Contexts;
+using Borealis.Portal.Domain.Exceptions;
 
 
-namespace Borealis.Drivers.Rpi.Udp.Services;
+
+namespace Borealis.Drivers.Rpi.Services;
 
 
 public class ServerHostedService : IHostedService
@@ -56,12 +61,12 @@ public class ServerHostedService : IHostedService
         try
         {
             _logger.LogInformation("Starting up the ledstrips. Getting configuration from settings file.");
-            LedstripSettings settings = await _settingsService.ReadLedstripSettingsAsync(cancellationToken).ConfigureAwait(false);
+            DeviceConfiguration configuration = await _settingsService.ReadLedstripSettingsAsync(cancellationToken).ConfigureAwait(false);
 
             // Starting the ledstrip context.
-            _logger.LogDebug($" Settings : {settings.LogToJson()}");
+            _logger.LogDebug($" Settings : {configuration.LogToJson()}");
             _logger.LogInformation("Starting the ledstrip system.");
-            _ledstripContext.SetConfiguration(settings);
+            _ledstripContext.SetConfiguration(configuration);
         }
         catch (AggregateException aggregateException)
         {

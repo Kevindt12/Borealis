@@ -1,5 +1,5 @@
-﻿using Borealis.Domain.Animations;
-using Borealis.Portal.Domain.Connections;
+﻿using Borealis.Domain.Effects;
+using Borealis.Domain.Ledstrips;
 
 
 
@@ -9,17 +9,17 @@ namespace Borealis.Portal.Domain.Animations;
 /// <summary>
 /// The animation player that can be used to play animations on ledstrips.
 /// </summary>
-public interface IAnimationPlayer : IDisposable, IAsyncDisposable
+public interface IAnimationPlayer : IAsyncDisposable
 {
     /// <summary>
-    /// The animation that we want to play.
+    /// The effect that we want to play
     /// </summary>
-    Animation Animation { get; }
+    Effect Effect { get; }
 
     /// <summary>
-    /// The ledstrip we want to play it on.
+    /// The ledstrip that we are playing the animation for.
     /// </summary>
-    ILedstripConnection Ledstrip { get; }
+    Ledstrip Ledstrip { get; }
 
     /// <summary>
     /// A flag indicating that we are running.
@@ -38,5 +38,5 @@ public interface IAnimationPlayer : IDisposable, IAsyncDisposable
     /// Stops the player.
     /// </summary>
     /// <param name="token"> A token to cancel the current operation. </param>
-    Task StopAsync(CancellationToken token = default);
+    Task PauseAsync(CancellationToken token = default);
 }

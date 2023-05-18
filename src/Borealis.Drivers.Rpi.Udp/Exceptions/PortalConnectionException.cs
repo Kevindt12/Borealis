@@ -1,4 +1,9 @@
-﻿namespace Borealis.Drivers.Rpi.Udp.Exceptions;
+﻿using System;
+using System.Linq;
+
+
+
+namespace Borealis.Drivers.Rpi.Exceptions;
 
 
 public class PortalConnectionException : PortalException

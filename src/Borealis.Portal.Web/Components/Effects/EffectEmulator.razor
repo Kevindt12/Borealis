@@ -1,0 +1,85 @@
+﻿@using Borealis.Portal.Domain.Effects.Factories
+@using Borealis.Portal.Domain.Devices.Models
+
+
+@* ReSharper disable InconsistentNaming | This is because i want to threat them as fields. I know this is just a autistic thing.*@
+@inject ILogger<EffectEmulator> _logger
+@inject IEffectEngineFactory _effectEngineFactory
+
+@inject ISnackbar _snackbar
+@* ReSharper restore InconsistentNaming *@
+
+
+
+@* Toolbar *@
+<MudToolBar Class="pa-2" Dense="true">
+    @* Start stop. *@
+    <MudIconButton Class="pa-2" Icon="@Icons.Material.Filled.Start" Disabled="IsRunning" Color="@(IsRunning ? Color.Success : Color.Secondary)" OnClick="StartAsync" />
+    <MudIconButton Class="pa-2" Icon="@Icons.Material.Filled.Stop" Disabled="!IsRunning" Color="@(IsRunning ? Color.Error : Color.Secondary)" OnClick="Stop" />
+    <MudDivider />
+
+    @* Length *@
+    <MudNumericField T="int" Class="pa-2" @bind-Value="Length" Variant="Variant.Text" Label="Length" />
+
+    @* Iterations *@
+    <MudNumericField T="int" Class="pa-2" @bind-Value="Iterations" Variant="Variant.Text" Label="Iterations"/>
+
+    @* Sample Rate *@
+    <MudNumericField T="int" Class="pa-2" @bind-Value="SampleRate" Variant="Variant.Text" Label="Sample Rate"/>
+    <MudDivider/>
+
+    <MudButton Class="pa-2"  Disabled="!Frames.Any()" Color="@(Frames.Any() ? Color.Error : Color.Secondary)" OnClick="OpenDialog" Label="Result"/>
+
+    @* Color spectrum. *@
+    <MudSelect T="ColorSpectrum" Class="pa-2" Variant="Variant.Text" Label="Color Spectrum" @bind-Value="ColorSpectrum">
+        <MudSelectItem T="ColorSpectrum" Value="ColorSpectrum.Rgb">Rgb</MudSelectItem>
+        <MudSelectItem T="ColorSpectrum" Value="ColorSpectrum.Rgbw">Rgb white</MudSelectItem>
+        <MudSelectItem T="ColorSpectrum" Value="ColorSpectrum.Rgbww">Rgb double white</MudSelectItem>
+    </MudSelect>
+</MudToolBar>
+<MudDivider />
+
+@* The output Console*@
+<MudPaper Class="pa-2" MinHeight="200px" MinWidth="1200px" Outlined="true">
+    <MudTextField T="string"
+                  Label="Console"
+                  Lines="20"
+                  Variant="Variant.Text"
+                  InputMode="InputMode.text"
+                  ReadOnly="true"
+                  @bind-Value="LogOutput" />
+</MudPaper>
+
+
+
+
+@* ---------- Select Effect Dialog ----------- *@
+@if (Frames.Any())
+{
+    <MudDialog @bind-IsVisible="_framesDialogVisible" Options="GetDialogOptions()">
+        <TitleContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Search" Class="mr-3" /> Results
+            </MudText>
+        </TitleContent>
+
+        <DialogContent>
+            <MusStack>
+
+            @for (int i = 0; i < Frames.Count - 1; i++)
+            {
+                <MudStack Row="true" Spacing="1" >
+                    
+                    @for (int j = 0; j < Frames[i].Length - 1; j++)
+                    {
+                        <PixelComponent Height="3" Width="3" PixelColor="Frames[i].Span[j]"></PixelComponent>
+                    }
+                </MudStack>
+            }
+            </MusStack>
+        </DialogContent>
+
+    </MudDialog>
+}
+
+

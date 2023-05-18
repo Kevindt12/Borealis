@@ -1,11 +1,13 @@
-﻿using Borealis.Domain.Devices;
-using Borealis.Domain.Effects;
+﻿using System;
+using System.Linq;
+
+using Borealis.Domain.Devices;
 
 using UnitsNet;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Connections;
+namespace Borealis.Drivers.Rpi.Connections;
 
 
 public class PortalConnectionHandlers
@@ -50,4 +52,4 @@ public delegate Task HandleFrameBufferCallback(byte ledstripIndex, IEnumerable<R
 
 
 
-public delegate Task HandleConfigurationCallback(LedstripSettings settings);
+public delegate Task HandleConfigurationCallback(DeviceConfiguration configuration);

@@ -1,0 +1,24 @@
+﻿@using Borealis.Portal.Domain.Ledstrips.Managers
+@using Borealis.Domain.Ledstrips
+@using Borealis.Portal.Domain.Ledstrips.Models
+
+
+<MudDialog>
+    <DialogContent>
+        <MudStack>
+            <MudTextField Label="Name" @bind-Value="@Ledstrip.Name" />
+            <MudNumericField Label="Pixel Count" @bind-Value="@Ledstrip.Length" />
+            <MudSelect T="LedstripChip" Label="Chip" @bind-Value="@Ledstrip.Chip">
+                @foreach (LedstripChip chip in Enum.GetValues(typeof(LedstripChip)))
+                {
+                    <MudSelectItem T="LedstripChip" Value="chip">@Enum.GetName(typeof(LedstripChip), chip)</MudSelectItem>
+                }
+            </MudSelect>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Save">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+

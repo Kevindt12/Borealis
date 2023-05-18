@@ -1,37 +1,43 @@
-﻿using System.Net;
+﻿using System;
+using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-using Borealis.Domain.Communication;
-using Borealis.Domain.Communication.Messages;
-using Borealis.Domain.Effects;
-using Borealis.Drivers.Rpi.Udp.Commands;
-using Borealis.Drivers.Rpi.Udp.Commands.Actions;
-using Borealis.Drivers.Rpi.Udp.Exceptions;
-using Borealis.Shared.Extensions;
+using Borealis.Drivers.Rpi.Commands;
+using Borealis.Drivers.Rpi.Commands.Actions;
+using Borealis.Drivers.Rpi.Exceptions;
 
 using Overby.Extensions.AsyncBinaryReaderWriter;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Connections;
+// TODO: Add IOException. IOException is thrown when the connection has dropped. IOException and SocketException are both systemExceptions. Food for taught.
+
+
+namespace Borealis.Drivers.Rpi.Connections;
 
 
 public class PortalConnection : IDisposable, IAsyncDisposable
 {
     private static readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
 
+    private readonly int ReceiveTimeout = 8000;
+
     // Dependencies.
     private readonly ILogger<PortalConnection> _logger;
 
     // Networking.
     private readonly TcpClient _client;
+    private readonly NetworkStream _stream;
+
+    // The 
     private readonly IQueryHandler<ConnectCommand, ConnectedQuery> _connectHandler;
     private readonly ICommandHandler<SetFrameCommand> _setFrameHandler;
     private readonly ICommandHandler<StartAnimationCommand> _startAnimationHandler;
     private readonly ICommandHandler<StopAnimationCommand> _stopAnimationHandler;
     private readonly ICommandHandler<ConfigurationCommand> _configurationHandler;
-    private readonly NetworkStream _stream;
+
 
     // Readers writers.
     private readonly AsyncBinaryReader _reader;
@@ -88,10 +94,7 @@ public class PortalConnection : IDisposable, IAsyncDisposable
 
         // Starting the listening task.
         _stoppingToken = new CancellationTokenSource();
-        _readingTask = Task.Factory.StartNew(RunningTaskLoop, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-
-        // Timer that checks if we are still connected with the device.
-        _keepCheckAliveTimer = new Timer(state => CheckKeepAliveAsync(), null, TimeSpan.FromSeconds(KeepAliveCheckSeconds), TimeSpan.FromSeconds(KeepAliveCheckSeconds));
+        _readingTask = Task.Factory.StartNew(RunningLoopHandler, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
     }
 
 
@@ -154,7 +157,7 @@ public class PortalConnection : IDisposable, IAsyncDisposable
             }
             else if (requestPacket.Identifier == PacketIdentifier.Error)
             {
-                // Hamding that we got a error from the protal.
+                // Handling error.
                 _logger.LogTrace("Error received from te client. Start decoding the error message.");
                 ErrorMessage message = responsePacket.ReadPayload<ErrorMessage>()!;
 
@@ -207,7 +210,7 @@ public class PortalConnection : IDisposable, IAsyncDisposable
     /// The running task loop.
     /// </summary>
     /// <returns> </returns>
-    private async Task RunningTaskLoop()
+    private async Task RunningLoopHandler()
     {
         _logger.LogTrace($"Start listening for packets from client : {_client.Client.RemoteEndPoint}.");
 
@@ -259,6 +262,12 @@ public class PortalConnection : IDisposable, IAsyncDisposable
                 {
                     _logger.LogWarning(operationCanceledException, "A opearion was cancelled by the portal.");
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "A error occurred while reading a packet from the portal.");
+
+                    throw;
+                }
                 finally
                 {
                     _lock.Release();
@@ -281,9 +290,7 @@ public class PortalConnection : IDisposable, IAsyncDisposable
     protected virtual Task HandleIncomingPacket(CommunicationPacket packet, CancellationToken token) =>
         packet.Identifier switch
         {
-            PacketIdentifier.KeepAlive      => HandleKeepAliveAsync(packet, token),
             PacketIdentifier.Connect        => HandleConnectAsync(packet, token),
-            PacketIdentifier.Disconnect     => HandleDisconnectAsync(packet, token),
             PacketIdentifier.StartAnimation => HandleStartAnimationAsync(packet, token),
             PacketIdentifier.StopAnimation  => HandleStopAnimationAsync(packet, token),
             PacketIdentifier.Frame          => HandleFrameAsync(packet, token),
@@ -299,26 +306,15 @@ public class PortalConnection : IDisposable, IAsyncDisposable
 
     #region Receive Handlers
 
-    protected virtual async Task HandleKeepAliveAsync(CommunicationPacket packet, CancellationToken token)
-    {
-        _logger.LogTrace("incoming packet keep alive.");
-
-        // Setting the date time that we last received a packet from.
-        _lastKeepAliveMessage = DateTime.Now;
-
-        // Sending the keep alive back to the portal.
-        await SendAsyncCore(CommunicationPacket.CreateKeepAlive(), token).ConfigureAwait(false);
-    }
-
-
     protected virtual async Task HandleConnectAsync(CommunicationPacket packet, CancellationToken token)
     {
-        _logger.LogTrace("Handling connection request from portal.");
-        ConnectMessage message = packet.ReadPayload<ConnectMessage>()!;
         ConnectedQuery result = default!;
 
         try
         {
+            _logger.LogTrace("Handling connection request from portal.");
+            ConnectMessage message = packet.ReadPayload<ConnectMessage>()!;
+
             result = await _connectHandler.Execute(new ConnectCommand
                                            {
                                                ConfigurationConcurrencyToken = message.ConfigurationConcurrencyToken,
@@ -337,6 +333,12 @@ public class PortalConnection : IDisposable, IAsyncDisposable
         {
             _logger.LogError(e, "Sending to portal that we have a problem processing the connection request.");
             await SendAsyncCore(CommunicationPacket.CreatePacketFromMessage(new ErrorMessage(e)), token).ConfigureAwait(false);
+
+            throw;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Unknown error.");
 
             throw;
         }
@@ -369,15 +371,6 @@ public class PortalConnection : IDisposable, IAsyncDisposable
             // handle unknown or unexpected packet.
             throw new PortalConnectionException($"Unexpected packet received, of type {acknowledgementPacket.Identifier}.") { Data = { { "Packet", acknowledgementPacket } } };
         }
-    }
-
-
-    protected virtual async Task HandleDisconnectAsync(CommunicationPacket packet, CancellationToken token)
-    {
-        _logger.LogTrace("Handling the disconnection of the portal.");
-
-        // Telling the portal that we where successful.
-        await SendAcknowledgementPacketAsync(token).ConfigureAwait(false);
     }
 
 
@@ -462,7 +455,7 @@ public class PortalConnection : IDisposable, IAsyncDisposable
 
             await _configurationHandler.ExecuteAsync(new ConfigurationCommand
                                         {
-                                            LedstripSettings = message.Settings
+                                            DeviceConfiguration = message.Settings
                                         })
                                        .ConfigureAwait(false);
 
@@ -517,13 +510,24 @@ public class PortalConnection : IDisposable, IAsyncDisposable
     /// <summary>
     /// Reads a packet from the buffer.
     /// </summary>
-    /// <exception cref="SocketException"> If there is a problem with the connection. </exception>
+    /// <exception cref="SocketException"> Thrown when there is a problem with the connection with the device. </exception>
+    /// <exception cref="IOException"> Thrown when there is a problem with the streams that we are using to communicate with the device. </exception>
+    /// <exception cref="OperationCanceledException"> Thrown when the operation was cancelled by the token. </exception>
+    /// <exception cref="TimeoutException"> Thrown when the receive has not received anything for the given timeout time. </exception>
     /// <param name="token"> A token to cancel the current operation. </param>
     /// <returns> A <see cref="CommunicationPacket" /> that has been send by the portal. </returns>
     protected virtual async Task<CommunicationPacket> ReadAsyncCore(CancellationToken token = default)
     {
+        token.ThrowIfCancellationRequested();
+
+        // Creating a time out token.
+        CancellationTokenSource timeoutToken = new CancellationTokenSource();
+        CancellationTokenSource combinedToken = CancellationTokenSource.CreateLinkedTokenSource(token, timeoutToken.Token);
+
         try
         {
+            timeoutToken.CancelAfter(ReceiveTimeout);
+
             // Reading the packet length.
             int packetLength = await _reader.ReadInt32Async(token).ConfigureAwait(false);
 
@@ -535,9 +539,25 @@ public class PortalConnection : IDisposable, IAsyncDisposable
 
             return receivedPacket;
         }
-        catch (SocketException socketException)
+        catch (OperationCanceledException operationCanceledException)
         {
-            _logger.LogError(socketException, "There was a problem while reading from the portal connection.");
+            _logger.LogTrace(operationCanceledException, $"Operation was cancelled checking if it was cancelled by the Timeout Token {timeoutToken.IsCancellationRequested}");
+
+            if (timeoutToken.IsCancellationRequested)
+            {
+                throw new TimeoutException("The receive operation has timed out.", operationCanceledException);
+            }
+
+            throw;
+        }
+        catch (IOException ioException)
+        {
+            _logger.LogTrace(ioException, "IOException Caught checking if its a wrapped Socket Exception.");
+
+            if (ioException.InnerException is SocketException)
+            {
+                throw ioException.InnerException;
+            }
 
             throw;
         }

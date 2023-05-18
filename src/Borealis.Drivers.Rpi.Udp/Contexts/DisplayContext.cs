@@ -1,12 +1,14 @@
-﻿using Borealis.Domain.Effects;
-using Borealis.Drivers.Rpi.Udp.Animations;
-using Borealis.Drivers.Rpi.Udp.Ledstrips;
+﻿using System;
+using System.Linq;
+
+using Borealis.Drivers.Rpi.Animations;
+using Borealis.Drivers.Rpi.Ledstrips;
 
 using UnitsNet;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Contexts;
+namespace Borealis.Drivers.Rpi.Contexts;
 
 
 public class DisplayContext

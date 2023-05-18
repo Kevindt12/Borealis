@@ -1,11 +1,14 @@
-﻿using Borealis.Domain.Devices;
+﻿using System;
+using System.Linq;
+
+using Borealis.Domain.Devices;
 
 
 
-namespace Borealis.Drivers.Rpi.Udp.Commands.Actions;
+namespace Borealis.Drivers.Rpi.Commands.Actions;
 
 
 public record ConfigurationCommand
 {
-    public required LedstripSettings LedstripSettings { get; init; }
+    public required DeviceConfiguration DeviceConfiguration { get; init; }
 }

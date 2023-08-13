@@ -25,48 +25,46 @@ namespace Borealis.Networking.Messages {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
             "Cg5NZXNzYWdlcy5wcm90bxIIYm9yZWFsaXMaGWdvb2dsZS9wcm90b2J1Zi9h",
-            "bnkucHJvdG8iEAoOQ29ubmVjdFJlcXVlc3QiKAoMQ29ubmVjdFJlcGx5EhgK",
-            "EGNvbmN1cnJlbmN5VG9rZW4YASABKAkicQoXU2V0Q29uZmlndXJhdGlvblJl",
-            "cXVlc3QSGAoQY29uY3VycmVuY3lUb2tlbhgBIAEoCRI8ChRjb25maWd1cmF0",
-            "aW9uTWVzc2FnZRgCIAEoCzIeLmJvcmVhbGlzLkNvbmZpZ3VyYXRpb25NZXNz",
-            "YWdlIj4KFVNldENvbmZpZ3VyYXRpb25SZXBseRIPCgdzdWNjZXNzGAEgASgI",
-            "EhQKDGVycm9yTWVzc2FnZRgCIAEoCSJyChVTdGFydEFuaW1hdGlvblJlcXVl",
-            "c3QSEgoKbGVkc3RyaXBJZBgBIAEoCRIRCglmcmVxdWVuY3kYAiABKAESMgoS",
-            "aW5pdGlhbEZyYW1lQnVmZmVyGAMgAygLMhYuYm9yZWFsaXMuRnJhbWVNZXNz",
-            "YWdlIioKFFN0b3BBbmltYXRpb25SZXF1ZXN0EhIKCmxlZHN0cmlwSWQYASAB",
-            "KAkiSQoWQW5pbWF0aW9uQnVmZmVyUmVxdWVzdBISCgpsZWRzdHJpcElkGAEg",
-            "ASgJEhsKE3JlcXVlc3RlZEZyYW1lQ291bnQYAiABKAUiQwoUQW5pbWF0aW9u",
-            "QnVmZmVyUmVwbHkSKwoLZnJhbWVCdWZmZXIYASADKAsyFi5ib3JlYWxpcy5G",
-            "cmFtZU1lc3NhZ2UiUAoTRGlzcGxheUZyYW1lUmVxdWVzdBISCgpsZWRzdHJp",
-            "cElkGAEgASgJEiUKBWZyYW1lGAIgASgLMhYuYm9yZWFsaXMuRnJhbWVNZXNz",
-            "YWdlIioKFENsZWFyTGVkc3RyaXBSZXF1ZXN0EhIKCmxlZHN0cmlwSWQYASAB",
-            "KAkiLAoWR2V0RHJpdmVyU3RhdHVzUmVxdWVzdBISCgpsZWRzdHJpcElkGAEg",
-            "ASgJIlEKFEdldERyaXZlclN0YXR1c1JlcGx5EjkKEGxlZHN0cmlwU3RhdHVz",
-            "ZXMYASADKAsyHy5ib3JlYWxpcy5MZWRzdHJpcFN0YXR1c01lc3NhZ2UiZQoK",
-            "RXJyb3JSZXBseRIiCgdlcnJvcklkGAEgASgOMhEuYm9yZWFsaXMuRXJyb3JJ",
-            "ZBIPCgdtZXNzYWdlGAIgASgJEiIKBGRhdGEYAyADKAsyFC5nb29nbGUucHJv",
-            "dG9idWYuQW55Ig4KDFN1Y2Nlc3NSZXBseSJdChVMZWRzdHJpcFN0YXR1c01l",
-            "c3NhZ2USEgoKbGVkc3RyaXBJZBgBIAEoCRIwCg5sZWRzdHJpcFN0YXR1cxgC",
-            "IAEoDjIYLmJvcmVhbGlzLkxlZHN0cmlwU3RhdHVzIkQKFENvbmZpZ3VyYXRp",
-            "b25NZXNzYWdlEiwKCWxlZHN0cmlwcxgBIAEoCzIZLmJvcmVhbGlzLkxlZHN0",
-            "cmlwTWVzc2FnZSJuCg9MZWRzdHJpcE1lc3NhZ2USDQoFYnVzSWQYASABKA0S",
-            "EgoKbGVkc3RyaXBJZBgCIAEoCRISCgpwaXhlbENvdW50GAMgASgNEiQKBENo",
-            "aXAYBCABKA4yFi5ib3JlYWxpcy5MZWRzdHJpcENoaXAiHgoMRnJhbWVNZXNz",
-            "YWdlEg4KBnBpeGVscxgBIAMoDypJCg5MZWRzdHJpcFN0YXR1cxIICgRJRExF",
-            "EAASFAoQRElTUEFMWUlOR19GUkFNRRABEgoKBlBBVVNFRBACEgsKB1BMQVlJ",
-            "TkcQAypkCgxMZWRzdHJpcENoaXASCwoHREVGQVVMVBAAEgsKB1dTMjgxMkIQ",
-            "ARIKCgZXUzI4MTMQAhIKCgZXUzI4MTUQAxIKCgZBUEExMDIQBBIKCgZTSzY4",
-            "MTIQBRIKCgZTSzk4MjIQBipiCgdFcnJvcklkEgsKB1VOS05PV04QABIRCg1V",
-            "TklNUExFTUVOVEVEEAESEQoNQ09NTVVOSUNBVElPThACEhEKDUlOVEVSTkFM",
-            "RVJST1IQAxIRCg1DT05GSUdVUkFUSU9OEARCH6oCHEJvcmVhbGlzLk5ldHdv",
-            "cmtpbmcuTWVzc2FnZXNiBnByb3RvMw=="));
+            "bnkucHJvdG8iEAoOQ29ubmVjdFJlcXVlc3QiOQoMQ29ubmVjdFJlcGx5EhgK",
+            "EGNvbmN1cnJlbmN5VG9rZW4YASABKAkSDwoHaXNSZWFkeRgCIAEoCCJxChdT",
+            "ZXRDb25maWd1cmF0aW9uUmVxdWVzdBIYChBjb25jdXJyZW5jeVRva2VuGAEg",
+            "ASgJEjwKFGNvbmZpZ3VyYXRpb25NZXNzYWdlGAIgASgLMh4uYm9yZWFsaXMu",
+            "Q29uZmlndXJhdGlvbk1lc3NhZ2UicgoVU3RhcnRBbmltYXRpb25SZXF1ZXN0",
+            "EhIKCmxlZHN0cmlwSWQYASABKAkSEQoJZnJlcXVlbmN5GAIgASgBEjIKEmlu",
+            "aXRpYWxGcmFtZUJ1ZmZlchgDIAMoCzIWLmJvcmVhbGlzLkZyYW1lTWVzc2Fn",
+            "ZSIqChRTdG9wQW5pbWF0aW9uUmVxdWVzdBISCgpsZWRzdHJpcElkGAEgASgJ",
+            "IkkKFkFuaW1hdGlvbkJ1ZmZlclJlcXVlc3QSEgoKbGVkc3RyaXBJZBgBIAEo",
+            "CRIbChNyZXF1ZXN0ZWRGcmFtZUNvdW50GAIgASgFIkMKFEFuaW1hdGlvbkJ1",
+            "ZmZlclJlcGx5EisKC2ZyYW1lQnVmZmVyGAEgAygLMhYuYm9yZWFsaXMuRnJh",
+            "bWVNZXNzYWdlIlAKE0Rpc3BsYXlGcmFtZVJlcXVlc3QSEgoKbGVkc3RyaXBJ",
+            "ZBgBIAEoCRIlCgVmcmFtZRgCIAEoCzIWLmJvcmVhbGlzLkZyYW1lTWVzc2Fn",
+            "ZSIqChRDbGVhckxlZHN0cmlwUmVxdWVzdBISCgpsZWRzdHJpcElkGAEgASgJ",
+            "IiwKFkdldERyaXZlclN0YXR1c1JlcXVlc3QSEgoKbGVkc3RyaXBJZBgBIAEo",
+            "CSJiChRHZXREcml2ZXJTdGF0dXNSZXBseRIPCgdpc1JlYWR5GAEgASgIEjkK",
+            "EGxlZHN0cmlwU3RhdHVzZXMYAiADKAsyHy5ib3JlYWxpcy5MZWRzdHJpcFN0",
+            "YXR1c01lc3NhZ2UiZQoKRXJyb3JSZXBseRIiCgdlcnJvcklkGAEgASgOMhEu",
+            "Ym9yZWFsaXMuRXJyb3JJZBIPCgdtZXNzYWdlGAIgASgJEiIKBGRhdGEYAyAD",
+            "KAsyFC5nb29nbGUucHJvdG9idWYuQW55Ig4KDFN1Y2Nlc3NSZXBseSJdChVM",
+            "ZWRzdHJpcFN0YXR1c01lc3NhZ2USEgoKbGVkc3RyaXBJZBgBIAEoCRIwCg5s",
+            "ZWRzdHJpcFN0YXR1cxgCIAEoDjIYLmJvcmVhbGlzLkxlZHN0cmlwU3RhdHVz",
+            "IkQKFENvbmZpZ3VyYXRpb25NZXNzYWdlEiwKCWxlZHN0cmlwcxgBIAMoCzIZ",
+            "LmJvcmVhbGlzLkxlZHN0cmlwTWVzc2FnZSJuCg9MZWRzdHJpcE1lc3NhZ2US",
+            "DQoFYnVzSWQYASABKA0SEgoKbGVkc3RyaXBJZBgCIAEoCRISCgpwaXhlbENv",
+            "dW50GAMgASgNEiQKBENoaXAYBCABKA4yFi5ib3JlYWxpcy5MZWRzdHJpcENo",
+            "aXAiHgoMRnJhbWVNZXNzYWdlEg4KBnBpeGVscxgBIAMoDypJCg5MZWRzdHJp",
+            "cFN0YXR1cxIICgRJRExFEAASFAoQRElTUEFMWUlOR19GUkFNRRABEgoKBlBB",
+            "VVNFRBACEgsKB1BMQVlJTkcQAypkCgxMZWRzdHJpcENoaXASCwoHREVGQVVM",
+            "VBAAEgsKB1dTMjgxMkIQARIKCgZXUzI4MTMQAhIKCgZXUzI4MTUQAxIKCgZB",
+            "UEExMDIQBBIKCgZTSzY4MTIQBRIKCgZTSzk4MjIQBipiCgdFcnJvcklkEgsK",
+            "B1VOS05PV04QABIRCg1VTklNUExFTUVOVEVEEAESEQoNQ09NTVVOSUNBVElP",
+            "ThACEhEKDUlOVEVSTkFMRVJST1IQAxIRCg1DT05GSUdVUkFUSU9OEARCH6oC",
+            "HEJvcmVhbGlzLk5ldHdvcmtpbmcuTWVzc2FnZXNiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::Google.Protobuf.WellKnownTypes.AnyReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Borealis.Networking.Messages.LedstripStatus), typeof(global::Borealis.Networking.Messages.LedstripChip), typeof(global::Borealis.Networking.Messages.ErrorId), }, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.ConnectRequest), global::Borealis.Networking.Messages.ConnectRequest.Parser, null, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.ConnectReply), global::Borealis.Networking.Messages.ConnectReply.Parser, new[]{ "ConcurrencyToken" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.ConnectReply), global::Borealis.Networking.Messages.ConnectReply.Parser, new[]{ "ConcurrencyToken", "IsReady" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.SetConfigurationRequest), global::Borealis.Networking.Messages.SetConfigurationRequest.Parser, new[]{ "ConcurrencyToken", "ConfigurationMessage" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.SetConfigurationReply), global::Borealis.Networking.Messages.SetConfigurationReply.Parser, new[]{ "Success", "ErrorMessage" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.StartAnimationRequest), global::Borealis.Networking.Messages.StartAnimationRequest.Parser, new[]{ "LedstripId", "Frequency", "InitialFrameBuffer" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.StopAnimationRequest), global::Borealis.Networking.Messages.StopAnimationRequest.Parser, new[]{ "LedstripId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.AnimationBufferRequest), global::Borealis.Networking.Messages.AnimationBufferRequest.Parser, new[]{ "LedstripId", "RequestedFrameCount" }, null, null, null, null),
@@ -74,7 +72,7 @@ namespace Borealis.Networking.Messages {
             new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.DisplayFrameRequest), global::Borealis.Networking.Messages.DisplayFrameRequest.Parser, new[]{ "LedstripId", "Frame" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.ClearLedstripRequest), global::Borealis.Networking.Messages.ClearLedstripRequest.Parser, new[]{ "LedstripId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.GetDriverStatusRequest), global::Borealis.Networking.Messages.GetDriverStatusRequest.Parser, new[]{ "LedstripId" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.GetDriverStatusReply), global::Borealis.Networking.Messages.GetDriverStatusReply.Parser, new[]{ "LedstripStatuses" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.GetDriverStatusReply), global::Borealis.Networking.Messages.GetDriverStatusReply.Parser, new[]{ "IsReady", "LedstripStatuses" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.ErrorReply), global::Borealis.Networking.Messages.ErrorReply.Parser, new[]{ "ErrorId", "Message", "Data" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.SuccessReply), global::Borealis.Networking.Messages.SuccessReply.Parser, null, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Borealis.Networking.Messages.LedstripStatusMessage), global::Borealis.Networking.Messages.LedstripStatusMessage.Parser, new[]{ "LedstripId", "LedstripStatus" }, null, null, null, null),
@@ -315,6 +313,7 @@ namespace Borealis.Networking.Messages {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public ConnectReply(ConnectReply other) : this() {
       concurrencyToken_ = other.concurrencyToken_;
+      isReady_ = other.isReady_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -336,6 +335,18 @@ namespace Borealis.Networking.Messages {
       }
     }
 
+    /// <summary>Field number for the "isReady" field.</summary>
+    public const int IsReadyFieldNumber = 2;
+    private bool isReady_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool IsReady {
+      get { return isReady_; }
+      set {
+        isReady_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -352,6 +363,7 @@ namespace Borealis.Networking.Messages {
         return true;
       }
       if (ConcurrencyToken != other.ConcurrencyToken) return false;
+      if (IsReady != other.IsReady) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -360,6 +372,7 @@ namespace Borealis.Networking.Messages {
     public override int GetHashCode() {
       int hash = 1;
       if (ConcurrencyToken.Length != 0) hash ^= ConcurrencyToken.GetHashCode();
+      if (IsReady != false) hash ^= IsReady.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -382,6 +395,10 @@ namespace Borealis.Networking.Messages {
         output.WriteRawTag(10);
         output.WriteString(ConcurrencyToken);
       }
+      if (IsReady != false) {
+        output.WriteRawTag(16);
+        output.WriteBool(IsReady);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -396,6 +413,10 @@ namespace Borealis.Networking.Messages {
         output.WriteRawTag(10);
         output.WriteString(ConcurrencyToken);
       }
+      if (IsReady != false) {
+        output.WriteRawTag(16);
+        output.WriteBool(IsReady);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -408,6 +429,9 @@ namespace Borealis.Networking.Messages {
       int size = 0;
       if (ConcurrencyToken.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(ConcurrencyToken);
+      }
+      if (IsReady != false) {
+        size += 1 + 1;
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -423,6 +447,9 @@ namespace Borealis.Networking.Messages {
       }
       if (other.ConcurrencyToken.Length != 0) {
         ConcurrencyToken = other.ConcurrencyToken;
+      }
+      if (other.IsReady != false) {
+        IsReady = other.IsReady;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -443,6 +470,10 @@ namespace Borealis.Networking.Messages {
             ConcurrencyToken = input.ReadString();
             break;
           }
+          case 16: {
+            IsReady = input.ReadBool();
+            break;
+          }
         }
       }
     #endif
@@ -460,6 +491,10 @@ namespace Borealis.Networking.Messages {
             break;
           case 10: {
             ConcurrencyToken = input.ReadString();
+            break;
+          }
+          case 16: {
+            IsReady = input.ReadBool();
             break;
           }
         }
@@ -709,235 +744,6 @@ namespace Borealis.Networking.Messages {
   }
 
   /// <summary>
-  /// ID: 6 
-  /// </summary>
-  public sealed partial class SetConfigurationReply : pb::IMessage<SetConfigurationReply>
-  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-      , pb::IBufferMessage
-  #endif
-  {
-    private static readonly pb::MessageParser<SetConfigurationReply> _parser = new pb::MessageParser<SetConfigurationReply>(() => new SetConfigurationReply());
-    private pb::UnknownFieldSet _unknownFields;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public static pb::MessageParser<SetConfigurationReply> Parser { get { return _parser; } }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[3]; }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    pbr::MessageDescriptor pb::IMessage.Descriptor {
-      get { return Descriptor; }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public SetConfigurationReply() {
-      OnConstruction();
-    }
-
-    partial void OnConstruction();
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public SetConfigurationReply(SetConfigurationReply other) : this() {
-      success_ = other.success_;
-      errorMessage_ = other.errorMessage_;
-      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public SetConfigurationReply Clone() {
-      return new SetConfigurationReply(this);
-    }
-
-    /// <summary>Field number for the "success" field.</summary>
-    public const int SuccessFieldNumber = 1;
-    private bool success_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public bool Success {
-      get { return success_; }
-      set {
-        success_ = value;
-      }
-    }
-
-    /// <summary>Field number for the "errorMessage" field.</summary>
-    public const int ErrorMessageFieldNumber = 2;
-    private string errorMessage_ = "";
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string ErrorMessage {
-      get { return errorMessage_; }
-      set {
-        errorMessage_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public override bool Equals(object other) {
-      return Equals(other as SetConfigurationReply);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public bool Equals(SetConfigurationReply other) {
-      if (ReferenceEquals(other, null)) {
-        return false;
-      }
-      if (ReferenceEquals(other, this)) {
-        return true;
-      }
-      if (Success != other.Success) return false;
-      if (ErrorMessage != other.ErrorMessage) return false;
-      return Equals(_unknownFields, other._unknownFields);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public override int GetHashCode() {
-      int hash = 1;
-      if (Success != false) hash ^= Success.GetHashCode();
-      if (ErrorMessage.Length != 0) hash ^= ErrorMessage.GetHashCode();
-      if (_unknownFields != null) {
-        hash ^= _unknownFields.GetHashCode();
-      }
-      return hash;
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public override string ToString() {
-      return pb::JsonFormatter.ToDiagnosticString(this);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public void WriteTo(pb::CodedOutputStream output) {
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-      output.WriteRawMessage(this);
-    #else
-      if (Success != false) {
-        output.WriteRawTag(8);
-        output.WriteBool(Success);
-      }
-      if (ErrorMessage.Length != 0) {
-        output.WriteRawTag(18);
-        output.WriteString(ErrorMessage);
-      }
-      if (_unknownFields != null) {
-        _unknownFields.WriteTo(output);
-      }
-    #endif
-    }
-
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      if (Success != false) {
-        output.WriteRawTag(8);
-        output.WriteBool(Success);
-      }
-      if (ErrorMessage.Length != 0) {
-        output.WriteRawTag(18);
-        output.WriteString(ErrorMessage);
-      }
-      if (_unknownFields != null) {
-        _unknownFields.WriteTo(ref output);
-      }
-    }
-    #endif
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public int CalculateSize() {
-      int size = 0;
-      if (Success != false) {
-        size += 1 + 1;
-      }
-      if (ErrorMessage.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(ErrorMessage);
-      }
-      if (_unknownFields != null) {
-        size += _unknownFields.CalculateSize();
-      }
-      return size;
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public void MergeFrom(SetConfigurationReply other) {
-      if (other == null) {
-        return;
-      }
-      if (other.Success != false) {
-        Success = other.Success;
-      }
-      if (other.ErrorMessage.Length != 0) {
-        ErrorMessage = other.ErrorMessage;
-      }
-      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public void MergeFrom(pb::CodedInputStream input) {
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-      input.ReadRawMessage(this);
-    #else
-      uint tag;
-      while ((tag = input.ReadTag()) != 0) {
-        switch(tag) {
-          default:
-            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
-            break;
-          case 8: {
-            Success = input.ReadBool();
-            break;
-          }
-          case 18: {
-            ErrorMessage = input.ReadString();
-            break;
-          }
-        }
-      }
-    #endif
-    }
-
-    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
-      uint tag;
-      while ((tag = input.ReadTag()) != 0) {
-        switch(tag) {
-          default:
-            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
-            break;
-          case 8: {
-            Success = input.ReadBool();
-            break;
-          }
-          case 18: {
-            ErrorMessage = input.ReadString();
-            break;
-          }
-        }
-      }
-    }
-    #endif
-
-  }
-
-  /// <summary>
   /// Start Animation
   /// ID: 100
   /// </summary>
@@ -955,7 +761,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[4]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[3]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1211,7 +1017,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[5]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[4]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1404,7 +1210,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[6]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[5]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1633,7 +1439,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[7]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[6]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1815,7 +1621,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[8]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[7]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2053,7 +1859,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[9]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[8]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2246,7 +2052,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[10]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[9]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2441,7 +2247,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[11]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[10]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2461,6 +2267,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public GetDriverStatusReply(GetDriverStatusReply other) : this() {
+      isReady_ = other.isReady_;
       ledstripStatuses_ = other.ledstripStatuses_.Clone();
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
@@ -2471,10 +2278,22 @@ namespace Borealis.Networking.Messages {
       return new GetDriverStatusReply(this);
     }
 
+    /// <summary>Field number for the "isReady" field.</summary>
+    public const int IsReadyFieldNumber = 1;
+    private bool isReady_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool IsReady {
+      get { return isReady_; }
+      set {
+        isReady_ = value;
+      }
+    }
+
     /// <summary>Field number for the "ledstripStatuses" field.</summary>
-    public const int LedstripStatusesFieldNumber = 1;
+    public const int LedstripStatusesFieldNumber = 2;
     private static readonly pb::FieldCodec<global::Borealis.Networking.Messages.LedstripStatusMessage> _repeated_ledstripStatuses_codec
-        = pb::FieldCodec.ForMessage(10, global::Borealis.Networking.Messages.LedstripStatusMessage.Parser);
+        = pb::FieldCodec.ForMessage(18, global::Borealis.Networking.Messages.LedstripStatusMessage.Parser);
     private readonly pbc::RepeatedField<global::Borealis.Networking.Messages.LedstripStatusMessage> ledstripStatuses_ = new pbc::RepeatedField<global::Borealis.Networking.Messages.LedstripStatusMessage>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -2497,6 +2316,7 @@ namespace Borealis.Networking.Messages {
       if (ReferenceEquals(other, this)) {
         return true;
       }
+      if (IsReady != other.IsReady) return false;
       if(!ledstripStatuses_.Equals(other.ledstripStatuses_)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
@@ -2505,6 +2325,7 @@ namespace Borealis.Networking.Messages {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
+      if (IsReady != false) hash ^= IsReady.GetHashCode();
       hash ^= ledstripStatuses_.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
@@ -2524,6 +2345,10 @@ namespace Borealis.Networking.Messages {
     #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       output.WriteRawMessage(this);
     #else
+      if (IsReady != false) {
+        output.WriteRawTag(8);
+        output.WriteBool(IsReady);
+      }
       ledstripStatuses_.WriteTo(output, _repeated_ledstripStatuses_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
@@ -2535,6 +2360,10 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (IsReady != false) {
+        output.WriteRawTag(8);
+        output.WriteBool(IsReady);
+      }
       ledstripStatuses_.WriteTo(ref output, _repeated_ledstripStatuses_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
@@ -2546,6 +2375,9 @@ namespace Borealis.Networking.Messages {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
+      if (IsReady != false) {
+        size += 1 + 1;
+      }
       size += ledstripStatuses_.CalculateSize(_repeated_ledstripStatuses_codec);
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -2558,6 +2390,9 @@ namespace Borealis.Networking.Messages {
     public void MergeFrom(GetDriverStatusReply other) {
       if (other == null) {
         return;
+      }
+      if (other.IsReady != false) {
+        IsReady = other.IsReady;
       }
       ledstripStatuses_.Add(other.ledstripStatuses_);
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
@@ -2575,7 +2410,11 @@ namespace Borealis.Networking.Messages {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
-          case 10: {
+          case 8: {
+            IsReady = input.ReadBool();
+            break;
+          }
+          case 18: {
             ledstripStatuses_.AddEntriesFrom(input, _repeated_ledstripStatuses_codec);
             break;
           }
@@ -2594,7 +2433,11 @@ namespace Borealis.Networking.Messages {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
-          case 10: {
+          case 8: {
+            IsReady = input.ReadBool();
+            break;
+          }
+          case 18: {
             ledstripStatuses_.AddEntriesFrom(ref input, _repeated_ledstripStatuses_codec);
             break;
           }
@@ -2622,7 +2465,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[12]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[11]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2877,7 +2720,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[13]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[12]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3029,7 +2872,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[14]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[13]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3255,7 +3098,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[15]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[14]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3275,7 +3118,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public ConfigurationMessage(ConfigurationMessage other) : this() {
-      ledstrips_ = other.ledstrips_ != null ? other.ledstrips_.Clone() : null;
+      ledstrips_ = other.ledstrips_.Clone();
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -3287,14 +3130,13 @@ namespace Borealis.Networking.Messages {
 
     /// <summary>Field number for the "ledstrips" field.</summary>
     public const int LedstripsFieldNumber = 1;
-    private global::Borealis.Networking.Messages.LedstripMessage ledstrips_;
+    private static readonly pb::FieldCodec<global::Borealis.Networking.Messages.LedstripMessage> _repeated_ledstrips_codec
+        = pb::FieldCodec.ForMessage(10, global::Borealis.Networking.Messages.LedstripMessage.Parser);
+    private readonly pbc::RepeatedField<global::Borealis.Networking.Messages.LedstripMessage> ledstrips_ = new pbc::RepeatedField<global::Borealis.Networking.Messages.LedstripMessage>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::Borealis.Networking.Messages.LedstripMessage Ledstrips {
+    public pbc::RepeatedField<global::Borealis.Networking.Messages.LedstripMessage> Ledstrips {
       get { return ledstrips_; }
-      set {
-        ledstrips_ = value;
-      }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3312,7 +3154,7 @@ namespace Borealis.Networking.Messages {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (!object.Equals(Ledstrips, other.Ledstrips)) return false;
+      if(!ledstrips_.Equals(other.ledstrips_)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -3320,7 +3162,7 @@ namespace Borealis.Networking.Messages {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
-      if (ledstrips_ != null) hash ^= Ledstrips.GetHashCode();
+      hash ^= ledstrips_.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -3339,10 +3181,7 @@ namespace Borealis.Networking.Messages {
     #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       output.WriteRawMessage(this);
     #else
-      if (ledstrips_ != null) {
-        output.WriteRawTag(10);
-        output.WriteMessage(Ledstrips);
-      }
+      ledstrips_.WriteTo(output, _repeated_ledstrips_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -3353,10 +3192,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      if (ledstrips_ != null) {
-        output.WriteRawTag(10);
-        output.WriteMessage(Ledstrips);
-      }
+      ledstrips_.WriteTo(ref output, _repeated_ledstrips_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -3367,9 +3203,7 @@ namespace Borealis.Networking.Messages {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
-      if (ledstrips_ != null) {
-        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Ledstrips);
-      }
+      size += ledstrips_.CalculateSize(_repeated_ledstrips_codec);
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
       }
@@ -3382,12 +3216,7 @@ namespace Borealis.Networking.Messages {
       if (other == null) {
         return;
       }
-      if (other.ledstrips_ != null) {
-        if (ledstrips_ == null) {
-          Ledstrips = new global::Borealis.Networking.Messages.LedstripMessage();
-        }
-        Ledstrips.MergeFrom(other.Ledstrips);
-      }
+      ledstrips_.Add(other.ledstrips_);
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
@@ -3404,10 +3233,7 @@ namespace Borealis.Networking.Messages {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
           case 10: {
-            if (ledstrips_ == null) {
-              Ledstrips = new global::Borealis.Networking.Messages.LedstripMessage();
-            }
-            input.ReadMessage(Ledstrips);
+            ledstrips_.AddEntriesFrom(input, _repeated_ledstrips_codec);
             break;
           }
         }
@@ -3426,10 +3252,7 @@ namespace Borealis.Networking.Messages {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
           case 10: {
-            if (ledstrips_ == null) {
-              Ledstrips = new global::Borealis.Networking.Messages.LedstripMessage();
-            }
-            input.ReadMessage(Ledstrips);
+            ledstrips_.AddEntriesFrom(ref input, _repeated_ledstrips_codec);
             break;
           }
         }
@@ -3453,7 +3276,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[16]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[15]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3753,7 +3576,7 @@ namespace Borealis.Networking.Messages {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[17]; }
+      get { return global::Borealis.Networking.Messages.MessagesReflection.Descriptor.MessageTypes[16]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]

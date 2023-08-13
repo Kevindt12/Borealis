@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace Borealis.Networking.Transmission;
 
 
-public abstract class MessageTransmitterBase
+public abstract class MessageTransmitterBase : IDisposable, IAsyncDisposable
 {
 	private readonly ILogger _logger;
 
@@ -33,6 +33,12 @@ public abstract class MessageTransmitterBase
 
 		Channel = channel;
 		Channel.ReceiveAsyncHandler = OrchestrateIncomingReceivingPacketAsync;
+	}
+
+
+	protected virtual SuccessReply Success()
+	{
+		return new SuccessReply();
 	}
 
 
@@ -78,7 +84,7 @@ public abstract class MessageTransmitterBase
 		CommunicationPacket packet = receivedPacket.Identifier switch
 		{
 			PacketIdentifier.ConnectRequest          => await HandleIncomingPacketAsync<ConnectRequest, ConnectReply>(HandleConnectRequestAsync, receivedPacket, token),
-			PacketIdentifier.SetConfigurationRequest => await HandleIncomingPacketAsync<SetConfigurationRequest, SetConfigurationReply>(HandleSetConfigurationRequestAsync, receivedPacket, token),
+			PacketIdentifier.SetConfigurationRequest => await HandleIncomingPacketAsync<SetConfigurationRequest, SuccessReply>(HandleSetConfigurationRequestAsync, receivedPacket, token),
 			PacketIdentifier.GetDriverStatusRequest  => await HandleIncomingPacketAsync<GetDriverStatusRequest, GetDriverStatusReply>(HandleGetDriverStatusRequestAsync, receivedPacket, token),
 
 			PacketIdentifier.StartAnimationRequest  => await HandleIncomingPacketAsync<StartAnimationRequest, SuccessReply>(HandleStartAnimationRequestAsync, receivedPacket, token),
@@ -160,9 +166,9 @@ public abstract class MessageTransmitterBase
 	/// <param name="request"> The <see cref="SetConfigurationRequest" /> that we want to send. </param>
 	/// <param name="token"> A token to cancel the current operation. </param>
 	/// <returns> The <see cref="SetConfigurationReply" /> that we get from the remote client. </returns>
-	public async Task<SetConfigurationReply> SendSetConfigurationRequestAsync(SetConfigurationRequest request, CancellationToken token = default)
+	public async Task<SuccessReply> SendSetConfigurationRequestAsync(SetConfigurationRequest request, CancellationToken token = default)
 	{
-		return await SendRequestAsyncCore<SetConfigurationRequest, SetConfigurationReply>(request, PacketIdentifier.SetConfigurationReply, token);
+		return await SendRequestAsyncCore<SetConfigurationRequest, SuccessReply>(request, PacketIdentifier.SetConfigurationReply, token);
 	}
 
 
@@ -307,9 +313,9 @@ public abstract class MessageTransmitterBase
 	}
 
 
-	protected virtual Task<SetConfigurationReply> HandleSetConfigurationRequestAsync(SetConfigurationRequest request, CancellationToken token)
+	protected virtual Task<SuccessReply> HandleSetConfigurationRequestAsync(SetConfigurationRequest request, CancellationToken token)
 	{
-		return Task.FromException<SetConfigurationReply>(new NotImplementedException());
+		return Task.FromException<SuccessReply>(new NotImplementedException());
 	}
 
 
@@ -347,6 +353,47 @@ public abstract class MessageTransmitterBase
 	{
 		return Task.FromException<SuccessReply>(new NotImplementedException());
 	}
+
+	#endregion
+
+
+	#region IDisposable
+
+	private bool _disposed;
+
+
+	/// <inheritdoc />
+	public void Dispose()
+	{
+		if (_disposed) return;
+
+		Dispose(true);
+		GC.SuppressFinalize(this);
+		_disposed = true;
+	}
+
+
+	protected virtual void Dispose(bool disposing)
+	{
+		if (disposing) { }
+	}
+
+
+	/// <inheritdoc />
+	public async ValueTask DisposeAsync()
+	{
+		if (_disposed) return;
+
+		await DisposeAsyncCore();
+
+		Dispose(false);
+		GC.SuppressFinalize(this);
+
+		_disposed = true;
+	}
+
+
+	protected virtual async ValueTask DisposeAsyncCore() { }
 
 	#endregion
 }

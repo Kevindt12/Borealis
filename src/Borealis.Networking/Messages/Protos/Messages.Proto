@@ -16,7 +16,7 @@ Message process
 Portal    --->          ConnectRequest         --->    Driver     --->        ConnectReply       --->  Portal
 
 - Configuration
-Portal    --->      SetConfigurationRequest    --->    Driver     --->   SetConfigurationReply   --->  Portal
+Portal    --->      SetConfigurationRequest    --->    Driver     --->   SuccessReply/ErrorReply   --->  Portal
 
 - Start Animation
 Portal    --->      StartAnimationRequest      --->    Driver     --->   SuccessReply/ErrorReply --->  Portal
@@ -62,6 +62,7 @@ message ConnectRequest {
 // ID: 2
 message ConnectReply {
   string concurrencyToken = 1;
+  bool isReady = 2;
 }
 
 
@@ -71,13 +72,6 @@ message SetConfigurationRequest {
   string concurrencyToken = 1;
   ConfigurationMessage configurationMessage = 2;
 }
-
-// ID: 6 
-message SetConfigurationReply {
-  bool success = 1;
-  string errorMessage = 2;
-}
-
 
 // Start Animation
 // ID: 100
@@ -130,7 +124,8 @@ message GetDriverStatusRequest {
 
 // ID: 251
 message GetDriverStatusReply {
-  repeated LedstripStatusMessage ledstripStatuses = 1;
+    bool isReady = 1;
+    repeated LedstripStatusMessage ledstripStatuses = 2;
 }
 
 
@@ -158,7 +153,7 @@ message LedstripStatusMessage {
 
 
 message ConfigurationMessage {
-  LedstripMessage ledstrips = 1;
+  repeated LedstripMessage ledstrips = 1;
 }
 
 message LedstripMessage {

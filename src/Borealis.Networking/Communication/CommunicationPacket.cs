@@ -128,7 +128,6 @@ public readonly struct CommunicationPacket
 		{ PacketIdentifier.ConnectReply, typeof(ConnectReply) },
 
 		{ PacketIdentifier.SetConfigurationRequest, typeof(SetConfigurationRequest) },
-		{ PacketIdentifier.SetConfigurationReply, typeof(SetConfigurationReply) },
 
 		{ PacketIdentifier.GetDriverStatusRequest, typeof(GetDriverStatusRequest) },
 		{ PacketIdentifier.GetDriverStatusReply, typeof(GetDriverStatusReply) },

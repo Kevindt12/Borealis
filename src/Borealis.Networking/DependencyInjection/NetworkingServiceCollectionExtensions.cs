@@ -4,6 +4,7 @@ using System.Linq;
 using Borealis.Networking.Connections;
 using Borealis.Networking.IO;
 using Borealis.Networking.Protocol;
+using Borealis.Networking.Transmission;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -52,5 +53,7 @@ public static class NetworkingServiceCollectionExtensions
 
 		services.AddTransient<IConnectionFactory, ConnectionFactory>();
 		services.AddTransient<IChannelFactory, ChannelFactory>();
+
+		services.AddTransient<IMessageTransmitterAbstractFactory, MessageTransmitterAbstractFactory>();
 	}
 }

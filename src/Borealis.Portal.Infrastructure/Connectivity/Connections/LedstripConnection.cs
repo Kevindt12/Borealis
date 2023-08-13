@@ -1,17 +1,13 @@
-﻿using Borealis.Communication.Messages;
-using Borealis.Domain.Ledstrips;
+﻿using Borealis.Domain.Ledstrips;
 using Borealis.Portal.Domain.Common;
 using Borealis.Portal.Domain.Connectivity.Connections;
+using Borealis.Portal.Domain.Devices.Models;
 using Borealis.Portal.Domain.Exceptions;
-using Borealis.Portal.Infrastructure.Communication;
 using Borealis.Portal.Infrastructure.Connectivity.Handlers;
-using Borealis.Portal.Infrastructure.Connectivity.Serialization;
 
 using Microsoft.Extensions.Logging;
 
 using UnitsNet;
-
-using LedstripStatus = Borealis.Portal.Domain.Devices.Models.LedstripStatus;
 
 
 
@@ -134,7 +130,7 @@ internal class LedstripConnection : IDeviceLedstripConnection
 	/// <exception cref="DeviceException"> Thrown when there is a that the device experienced. </exception>
 	/// <exception cref="DeviceCommunicationException"> Thrown when the device has problems with the communication. </exception>
 	/// <exception cref="DeviceConnectionException"> Thrown when there is a problem with the connection with the device. </exception>
-	public async Task SetSingleFrameAsync(ReadOnlyMemory<PixelColor> frame, CancellationToken token = default)
+	public async Task DisplayFrameAsync(ReadOnlyMemory<PixelColor> frame, CancellationToken token = default)
 	{
 		CommunicationPacket requestPacket = _messageSerializer.SerializeDisplayFrameRequest(Ledstrip.Id, frame);
 
@@ -194,86 +190,4 @@ internal class LedstripConnection : IDeviceLedstripConnection
 	{
 		throw new DeviceCommunicationException("The packet that was received was not the packet we where expecting.");
 	}
-
-
-	#region Packet Factories
-
-	//private CommunicationPacket CreateStartAnimationRequestPacket(Frequency frequency, ReadOnlyMemory<ReadOnlyMemory<PixelColor>> initialFrameBuffer)
-	//{
-	//    // Creating the buffer
-	//    int packetSize = initialFrameBuffer.Length * 2048 + 2048;
-	//    FlatBufferBuilder builder = new FlatBufferBuilder(packetSize);
-
-	//    // Creating the packet.
-	//    StartAnimationRequest.StartStartAnimationRequest(builder);
-
-	//    // Constructing the packet
-	//    StartAnimationRequest.AddLedstripId(builder, builder.CreateString(Ledstrip.Id.ToString()));
-	//    StartAnimationRequest.AddFrequency(builder, Convert.ToSingle(frequency.Hertz));
-
-	//    // Adding the frames
-	//    for (int frameIndex = 0; frameIndex < initialFrameBuffer.Length; frameIndex++)
-	//    {
-	//        StartAnimationRequest.AddInitialFrameBuffer(builder, FrameMessage.CreatePixelsVector(builder, BuildFrame(builder, initialFrameBuffer.Span[frameIndex])));
-	//    }
-
-	//    // Finalizing the message
-	//    builder.Finish(StartAnimationRequest.EndStartAnimationRequest(builder).Value);
-
-	//    return new CommunicationPacket(PacketIdentifier.StartAnimationRequest, builder.SizedByteArray());
-	//}
-
-
-	//private CommunicationPacket CreateSetSingleColorPacket(ReadOnlyMemory<PixelColor> frame)
-	//{
-	//    // Creating the buffer.
-	//    FlatBufferBuilder builder = new FlatBufferBuilder(4096);
-
-	//    // Starting the message
-	//    StringOffset ledstripId = builder.CreateString(Ledstrip.Id.ToString());
-	//    SetLedstripColorRequest.StartSetLedstripColorRequest(builder);
-	//    SetLedstripColorRequest.AddLedstripId(builder, ledstripId);
-
-	//    // Setting the frame
-	//    SetLedstripColorRequest.AddFrame(builder, FrameMessage.CreateFrameMessage(builder, builder.CreateVectorOfTables(BuildFrame(builder, frame))));
-
-	//    // End message
-	//    builder.Finish(SetLedstripColorRequest.EndSetLedstripColorRequest(builder).Value);
-
-	//    return new CommunicationPacket(PacketIdentifier.SetLedstripColorRequest, builder.SizedByteArray());
-	//}
-
-
-	//private CommunicationPacket CreateClearLedstripPacket()
-	//{
-	//    // Creating the buffer.
-	//    FlatBufferBuilder builder = new FlatBufferBuilder(128);
-
-	//    // Starting the message
-	//    ClearLedstripRequest.StartClearLedstripRequest(builder);
-	//    ClearLedstripRequest.AddLedstripId(builder, builder.CreateString(Ledstrip.Id.ToString()));
-
-	//    // End message
-	//    builder.Finish(ClearLedstripRequest.EndClearLedstripRequest(builder).Value);
-
-	//    return new CommunicationPacket(PacketIdentifier.ClearLedstripRequest, builder.SizedByteArray());
-	//}
-
-
-	//private CommunicationPacket CreateAnimationBufferReply(ReadOnlyMemory<ReadOnlyMemory<PixelColor>> frames)
-	//{
-	//    // This is a estimation because the true size will be calculated by the buffer builder
-	//    int packetSize = frames.Length * 2048;
-
-	//    FlatBufferBuilder builder = new FlatBufferBuilder(packetSize);
-	//    AnimationBufferReply.StartAnimationBufferReply(builder);
-
-	//    // Add the frame buffers
-
-	//    builder.Finish(AnimationBufferReply.EndAnimationBufferReply(builder).Value);
-
-	//    return new CommunicationPacket(PacketIdentifier.AnimationBufferReply, builder.SizedByteArray());
-	//}
-
-	#endregion
 }

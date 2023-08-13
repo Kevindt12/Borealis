@@ -17,190 +17,183 @@ namespace Borealis.Drivers.RaspberryPi.Sharp.Ledstrips.Service;
 
 public class LedstripService : ILedstripControlService, ILedstripConfigurationService
 {
-    private readonly ILogger<LedstripService> _logger;
-    private readonly LedstripContext _ledstripContext;
-    private readonly LedstripStateFactory _ledstripStateFactory;
-    private readonly ILedstripProxyFactory _ledstripProxyFactory;
+	private readonly ILogger<LedstripService> _logger;
+	private readonly DisplayContext _displayContext;
+	private readonly LedstripStateFactory _ledstripStateFactory;
+	private readonly ILedstripProxyFactory _ledstripProxyFactory;
 
 
-    public LedstripService(ILogger<LedstripService> logger,
-                           LedstripContext ledstripContext,
-                           LedstripStateFactory ledstripStateFactory,
-                           ILedstripProxyFactory ledstripProxyFactory)
-    {
-        _logger = logger;
-        _ledstripContext = ledstripContext;
-        _ledstripStateFactory = ledstripStateFactory;
-        _ledstripProxyFactory = ledstripProxyFactory;
-    }
+	public LedstripService(ILogger<LedstripService> logger,
+						   DisplayContext displayContext,
+						   LedstripStateFactory ledstripStateFactory,
+						   ILedstripProxyFactory ledstripProxyFactory)
+	{
+		_logger = logger;
+		_displayContext = displayContext;
+		_ledstripStateFactory = ledstripStateFactory;
+		_ledstripProxyFactory = ledstripProxyFactory;
+	}
 
 
-    #region Configuration
+	#region Configuration
 
-    /// <inheritdoc />
-    public virtual async Task LoadConfigurationAsync(DeviceConfiguration configuration)
-    {
-        _logger.LogDebug("Loading configuration.");
+	/// <inheritdoc />
+	public virtual async Task LoadConfigurationAsync(DeviceConfiguration configuration)
+	{
+		_logger.LogDebug("Loading configuration.");
 
-        if (_ledstripContext.HasAnimations()) throw new InvalidOperationException("There are animation running on the ledstrip cannot ");
+		if (_displayContext.HasAnimations()) throw new InvalidOperationException("There are animation running on the ledstrip cannot ");
 
-        // Cleaning the old configuration if there is one loaded.
-        if (!_ledstripContext.IsEmpty())
-        {
-            _logger.LogTrace("Cleaning up the old ledstrip and loading in a new configuration.");
-            _ledstripContext.Clear();
-        }
+		// Cleaning the old configuration if there is one loaded.
+		if (!_displayContext.IsEmpty())
+		{
+			_logger.LogTrace("Cleaning up the old ledstrip and loading in a new configuration.");
+			_displayContext.Clear();
+		}
 
-        // Creating the ledstrip states.
-        IEnumerable<LedstripState> states = CreateLedstripStates(configuration.Ledstrips);
+		// Creating the ledstrip states.
+		IEnumerable<DisplayState> states = CreateLedstripStates(configuration.Ledstrips);
 
-        // Loading the ledstrip configuration.
-        _logger.LogTrace("Loading ledstrip configuration.");
-        _ledstripContext.LoadLedstrips(states);
-    }
-
-
-    /// <summary>
-    /// Creates the ledstrip states that we need to load into the configuration.
-    /// </summary>
-    /// <param name="ledstrips"> The ledstrips that we want to load. </param>
-    /// <returns> A <see cref="LedstripState" /> ready to be used. </returns>
-    protected virtual IEnumerable<LedstripState> CreateLedstripStates(IEnumerable<Ledstrip> ledstrips)
-    {
-        foreach (Ledstrip ledstrip in ledstrips)
-        {
-            // Creating the ledstrip state.
-            LedstripProxyBase ledstripProxy = _ledstripProxyFactory.CreateLedstripProxy(ledstrip);
-            LedstripState state = _ledstripStateFactory.Create(ledstripProxy);
-
-            yield return state;
-        }
-    }
+		// Loading the ledstrip configuration.
+		_logger.LogTrace("Loading ledstrip configuration.");
+		_displayContext.LoadLedstrips(states);
+	}
 
 
-    /// <inheritdoc />
-    public virtual bool CanLoadConfiguration()
-    {
-        return !_ledstripContext.HasAnimations();
-    }
+	/// <summary>
+	/// Creates the ledstrip states that we need to load into the configuration.
+	/// </summary>
+	/// <param name="ledstrips"> The ledstrips that we want to load. </param>
+	/// <returns> A <see cref="DisplayState" /> ready to be used. </returns>
+	protected virtual IEnumerable<DisplayState> CreateLedstripStates(IEnumerable<Ledstrip> ledstrips)
+	{
+		foreach (Ledstrip ledstrip in ledstrips)
+		{
+			// Creating the ledstrip state.
+			LedstripProxyBase ledstripProxy = _ledstripProxyFactory.CreateLedstripProxy(ledstrip);
+			DisplayState state = _ledstripStateFactory.Create(ledstripProxy);
 
-    #endregion
+			yield return state;
+		}
+	}
 
-
-    #region Information
-
-    /// <inheritdoc />
-    public virtual Ledstrip? GetLedstripById(Guid ledstripId)
-    {
-        return _ledstripContext.GetLedstripStateById(ledstripId)?.Ledstrip;
-    }
-
-
-    /// <inheritdoc />
-    public virtual LedstripStatus? GetLedstripStatus(Ledstrip ledstrip)
-    {
-        return GetLedstripStatus(ledstrip.Id);
-    }
+	#endregion
 
 
-    /// <inheritdoc />
-    public virtual LedstripStatus? GetLedstripStatus(Guid ledstripId)
-    {
-        // Getting the ledstrip state
-        LedstripState? ledstripState = _ledstripContext.GetLedstripStateById(ledstripId);
+	#region Information
 
-        if (ledstripState == null) return null;
-
-        if (ledstripState.IsAnimationPlaying()) return LedstripStatus.PlayingAnimation;
-        if (ledstripState.HasAnimation()) return LedstripStatus.PausedAnimation;
-        if (ledstripState.IsDisplayingFrame()) return LedstripStatus.DisplayingFrame;
-
-        return LedstripStatus.Idle;
-    }
-
-    #endregion
+	/// <inheritdoc />
+	public virtual Ledstrip? GetLedstripById(Guid ledstripId)
+	{
+		return _displayContext.GetLedstripStateById(ledstripId)?.Ledstrip;
+	}
 
 
-    #region Actions
-
-    /// <inheritdoc />
-    public virtual async Task StartAnimationAsync(Ledstrip ledstrip, Frequency frequency, ReadOnlyMemory<PixelColor>[] initialFrameBuffer, CancellationToken token = default)
-    {
-        // Getting the ledstrip state.
-        _logger.LogDebug($"Starting animation on ledstrip {ledstrip.Id}, with frequency of {frequency.Hertz}Hz, with an initial frame buffer of {initialFrameBuffer.Length} frames.");
-        LedstripState ledstripState = _ledstripContext.GetLedstripStateById(ledstrip.Id) ?? throw new LedstripNotFoundException("The selected ledstrip was not found.");
-
-        await ledstripState.StartAnimationAsync(frequency, initialFrameBuffer, token).ConfigureAwait(false);
-        _logger.LogDebug($"Animation started on ledstrip {ledstrip.Id}.");
-    }
+	/// <inheritdoc />
+	public virtual LedstripStatus? GetLedstripStatus(Ledstrip ledstrip)
+	{
+		return GetLedstripStatus(ledstrip.Id);
+	}
 
 
-    /// <inheritdoc />
-    public virtual async Task PauseAnimationAsync(Ledstrip ledstrip, CancellationToken token = default)
-    {
-        // Getting the ledstrip state.
-        _logger.LogDebug($"Pausing animation on ledstrip {ledstrip.Id}");
-        LedstripState ledstripState = _ledstripContext.GetLedstripStateById(ledstrip.Id) ?? throw new LedstripNotFoundException("The selected ledstrip was not found.");
+	/// <inheritdoc />
+	public virtual LedstripStatus? GetLedstripStatus(Guid ledstripId)
+	{
+		// Getting the ledstrip state
+		DisplayState? ledstripState = _displayContext.GetLedstripStateById(ledstripId);
 
-        // Pausing the animation player.
-        await ledstripState.PauseAnimationAsync(token).ConfigureAwait(false);
-        _logger.LogDebug("The animation player has paused.");
-    }
+		if (ledstripState == null) return null;
 
+		if (ledstripState.IsAnimationPlaying()) return LedstripStatus.PlayingAnimation;
+		if (ledstripState.HasAnimation()) return LedstripStatus.PausedAnimation;
+		if (ledstripState.IsDisplayingFrame()) return LedstripStatus.DisplayingFrame;
 
-    /// <inheritdoc />
-    public virtual async Task StopAnimationAsync(Ledstrip ledstrip, CancellationToken token = default)
-    {
-        // Getting the ledstrip state.
-        _logger.LogDebug($"Stopping animation on ledstrip {ledstrip.Id}.");
-        LedstripState ledstripState = _ledstripContext.GetLedstripStateById(ledstrip.Id) ?? throw new LedstripNotFoundException("The selected ledstrip was not found.");
+		return LedstripStatus.Idle;
+	}
 
-        await ledstripState.StopAnimationAsync(token).ConfigureAwait(false);
-        _logger.LogDebug("Animation player cleaned up.");
-    }
+	#endregion
 
 
-    /// <inheritdoc />
-    public async Task StopAnimations(CancellationToken token = default)
-    {
-        foreach (LedstripState ledstripState in _ledstripContext.GetLedstripStates().Where(x => x.HasAnimation()))
-        {
-            if (ledstripState.HasAnimation())
-            {
-                await ledstripState.StopAnimationAsync(token).ConfigureAwait(false);
-            }
-        }
-    }
+	#region Actions
+
+	/// <inheritdoc />
+	public virtual async Task StartAnimationAsync(Ledstrip ledstrip, Frequency frequency, ReadOnlyMemory<PixelColor>[] initialFrameBuffer, CancellationToken token = default)
+	{
+		// Getting the ledstrip state.
+		_logger.LogDebug($"Starting animation on ledstrip {ledstrip.Id}, with frequency of {frequency.Hertz}Hz, with an initial frame buffer of {initialFrameBuffer.Length} frames.");
+		DisplayState displayState = _displayContext.GetLedstripStateById(ledstrip.Id) ?? throw new LedstripNotFoundException("The selected ledstrip was not found.");
+
+		await displayState.StartAnimationAsync(frequency, initialFrameBuffer, token).ConfigureAwait(false);
+		_logger.LogDebug($"Animation started on ledstrip {ledstrip.Id}.");
+	}
 
 
-    /// <inheritdoc />
-    public virtual Task DisplayFameAsync(Ledstrip ledstrip, ReadOnlyMemory<PixelColor> frame, CancellationToken token = default)
-    {
-        // Getting ledstrip state.
-        _logger.LogDebug($"Displaying frame on ledstrip {ledstrip.Id}.");
-        LedstripState ledstripState = _ledstripContext.GetLedstripStateById(ledstrip.Id) ?? throw new LedstripNotFoundException("The selected ledstrip was not found.");
+	/// <inheritdoc />
+	public virtual async Task PauseAnimationAsync(Ledstrip ledstrip, CancellationToken token = default)
+	{
+		// Getting the ledstrip state.
+		_logger.LogDebug($"Pausing animation on ledstrip {ledstrip.Id}");
+		DisplayState displayState = _displayContext.GetLedstripStateById(ledstrip.Id) ?? throw new LedstripNotFoundException("The selected ledstrip was not found.");
 
-        // Setting the frame.
-        ledstripState.DisplayFrame(frame);
-        _logger.LogDebug("Showing the colors on the ledstrip.");
-
-        return Task.CompletedTask;
-    }
+		// Pausing the animation player.
+		await displayState.PauseAnimationAsync(token).ConfigureAwait(false);
+		_logger.LogDebug("The animation player has paused.");
+	}
 
 
-    /// <inheritdoc />
-    public virtual Task ClearLedstripAsync(Ledstrip ledstrip, CancellationToken token = default)
-    {
-        // Getting ledstrip state.
-        _logger.LogDebug($"Displaying frame on ledstrip {ledstrip.Id}.");
-        LedstripState ledstripState = _ledstripContext.GetLedstripStateById(ledstrip.Id) ?? throw new LedstripNotFoundException("The selected ledstrip was not found.");
+	/// <inheritdoc />
+	public virtual async Task StopAnimationAsync(Ledstrip ledstrip, CancellationToken token = default)
+	{
+		// Getting the ledstrip state.
+		_logger.LogDebug($"Stopping animation on ledstrip {ledstrip.Id}.");
+		DisplayState displayState = _displayContext.GetLedstripStateById(ledstrip.Id) ?? throw new LedstripNotFoundException("The selected ledstrip was not found.");
 
-        // Setting the frame.
-        ledstripState.ClearFrame();
-        _logger.LogDebug("Clearing the ledstrip.");
+		await displayState.StopAnimationAsync(token).ConfigureAwait(false);
+		_logger.LogDebug("Animation player cleaned up.");
+	}
 
-        return Task.CompletedTask;
-    }
 
-    #endregion
+	/// <inheritdoc />
+	public async Task StopAnimations(CancellationToken token = default)
+	{
+		foreach (DisplayState ledstripState in _displayContext.GetLedstripStates().Where(x => x.HasAnimation()))
+		{
+			if (ledstripState.HasAnimation())
+			{
+				await ledstripState.StopAnimationAsync(token).ConfigureAwait(false);
+			}
+		}
+	}
+
+
+	/// <inheritdoc />
+	public virtual Task DisplayFameAsync(Ledstrip ledstrip, ReadOnlyMemory<PixelColor> frame, CancellationToken token = default)
+	{
+		// Getting ledstrip state.
+		_logger.LogDebug($"Displaying frame on ledstrip {ledstrip.Id}.");
+		DisplayState displayState = _displayContext.GetLedstripStateById(ledstrip.Id) ?? throw new LedstripNotFoundException("The selected ledstrip was not found.");
+
+		// Setting the frame.
+		displayState.DisplayFrame(frame);
+		_logger.LogDebug("Showing the colors on the ledstrip.");
+
+		return Task.CompletedTask;
+	}
+
+
+	/// <inheritdoc />
+	public virtual Task ClearLedstripAsync(Ledstrip ledstrip, CancellationToken token = default)
+	{
+		// Getting ledstrip state.
+		_logger.LogDebug($"Displaying frame on ledstrip {ledstrip.Id}.");
+		DisplayState displayState = _displayContext.GetLedstripStateById(ledstrip.Id) ?? throw new LedstripNotFoundException("The selected ledstrip was not found.");
+
+		// Setting the frame.
+		displayState.ClearFrame();
+		_logger.LogDebug("Clearing the ledstrip.");
+
+		return Task.CompletedTask;
+	}
+
+	#endregion
 }

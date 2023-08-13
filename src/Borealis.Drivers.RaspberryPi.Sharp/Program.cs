@@ -3,7 +3,6 @@
 using Borealis.Drivers.RaspberryPi.Sharp.Animations.Factories;
 using Borealis.Drivers.RaspberryPi.Sharp.Animations.Options;
 using Borealis.Drivers.RaspberryPi.Sharp.Connection.Context;
-using Borealis.Drivers.RaspberryPi.Sharp.Connection.Factories;
 using Borealis.Drivers.RaspberryPi.Sharp.Connection.Managers;
 using Borealis.Drivers.RaspberryPi.Sharp.Connection.Options;
 using Borealis.Drivers.RaspberryPi.Sharp.Connection.Services;
@@ -63,7 +62,7 @@ public static class Program
 
 		// State
 		services.AddSingleton<ConnectionContext>();
-		services.AddSingleton<LedstripContext>();
+		services.AddSingleton<DisplayContext>();
 
 		// Providers
 		services.AddSingleton<ILedstripSettingsProvider, LedstripSettingsProvider>();
@@ -72,10 +71,7 @@ public static class Program
 		//// Factories.
 		services.AddTransient<ILedstripProxyFactory, LedstripProxyFactory>();
 		services.AddTransient<AnimationPlayerFactory>();
-		services.AddTransient<PortalConnectionFactory>();
-		services.AddTransient<ConnectionControllerFactory>();
 		services.AddTransient<LedstripStateFactory>();
-		services.AddTransient<ServerFactory>();
 
 		// Managers
 		services.AddTransient<IDeviceConfigurationManager, DeviceConfigurationManager>();
@@ -89,7 +85,7 @@ public static class Program
 
 		// Hosting
 		services.AddHostedService<LedstripHostedService>();
-		services.AddHostedService<ServerHostedService>();
+		services.AddHostedService<ConnectionHostedService>();
 	}
 
 

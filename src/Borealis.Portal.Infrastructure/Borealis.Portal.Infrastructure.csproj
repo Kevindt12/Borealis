@@ -19,13 +19,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Borealis.Networking\Borealis.Networking.csproj" />
     <ProjectReference Include="..\Borealis.Portal.Domain\Borealis.Portal.Domain.csproj" />
     <ProjectReference Include="..\Borealis.Shared\Borealis.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Connectivity\Protocol\" />
     <Folder Include="Connectivity\Options\" />
-    <Folder Include="Messages\" />
     <Folder Include="Properties\" />
   </ItemGroup>
 

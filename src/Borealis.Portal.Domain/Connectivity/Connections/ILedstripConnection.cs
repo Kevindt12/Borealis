@@ -26,59 +26,52 @@ public delegate Task<ReadOnlyMemory<ReadOnlyMemory<PixelColor>>> FrameBufferRequ
 /// </summary>
 public interface ILedstripConnection
 {
-    /// <summary>
-    /// The request handler for getting frame buffers.
-    /// </summary>
-    FrameBufferRequestHandler? FrameBufferRequestHandler { get; set; }
+	/// <summary>
+	/// The request handler for getting frame buffers.
+	/// </summary>
+	FrameBufferRequestHandler? FrameBufferRequestHandler { get; set; }
 
 
-    /// <summary>
-    /// The ledstrip we are communicating with.
-    /// </summary>
-    Ledstrip Ledstrip { get; }
+	/// <summary>
+	/// The ledstrip we are communicating with.
+	/// </summary>
+	Ledstrip Ledstrip { get; }
 
 
-    /// <summary>
-    /// Gets the status of the ledstrip.
-    /// </summary>
-    /// <returns> A <see cref="LedstripStatus" /> of the ledstrip. </returns>
-    Task<LedstripStatus> GetLedstripStatus();
+	/// <summary>
+	/// Gets the status of the ledstrip.
+	/// </summary>
+	/// <returns> A <see cref="LedstripStatus" /> of the ledstrip. </returns>
+	Task<LedstripStatus> GetLedstripStatus();
 
 
-    /// <summary>
-    /// Starts the animation on the ledstrip.
-    /// </summary>
-    /// <param name="frequency"> The <see cref="Frequency" /> of the animation that we want to play. </param>
-    /// <param name="initialFrameBuffer"> The initial frame buffer that we want to send. </param>
-    /// <param name="token"> A token to cancel the current operation. </param>
-    Task StartAnimationAsync(Frequency frequency, ReadOnlyMemory<ReadOnlyMemory<PixelColor>> initialFrameBuffer, CancellationToken token = default);
+	/// <summary>
+	/// Starts the animation on the ledstrip.
+	/// </summary>
+	/// <param name="frequency"> The <see cref="Frequency" /> of the animation that we want to play. </param>
+	/// <param name="initialFrameBuffer"> The initial frame buffer that we want to send. </param>
+	/// <param name="token"> A token to cancel the current operation. </param>
+	Task StartAnimationAsync(Frequency frequency, ReadOnlyMemory<ReadOnlyMemory<PixelColor>> initialFrameBuffer, CancellationToken token = default);
 
 
-    /// <summary>
-    /// Pauses the animation it keeps the stack buffer. So we can start it again.
-    /// </summary>
-    /// <param name="token"> A token to cancel the current operation. </param>
-    Task PauseAnimationAsync(CancellationToken token = default);
+	/// <summary>
+	/// Stops the animation on the ledstrip.
+	/// </summary>
+	/// <param name="token"> A token to cancel the current operation. </param>
+	Task StopAnimationAsync(CancellationToken token = default);
 
 
-    /// <summary>
-    /// Stops the animation on the ledstrip.
-    /// </summary>
-    /// <param name="token"> A token to cancel the current operation. </param>
-    Task StopAnimationAsync(CancellationToken token = default);
+	/// <summary>
+	/// Sets the colors on the ledstrip.
+	/// </summary>
+	/// <param name="frame"> The colors we want to set. </param>
+	/// <param name="token"> A token to cancel the current operation. </param>
+	Task DisplayFrameAsync(ReadOnlyMemory<PixelColor> frame, CancellationToken token = default);
 
 
-    /// <summary>
-    /// Sets the colors on the ledstrip.
-    /// </summary>
-    /// <param name="frame"> The colors we want to set. </param>
-    /// <param name="token"> A token to cancel the current operation. </param>
-    Task SetSingleFrameAsync(ReadOnlyMemory<PixelColor> frame, CancellationToken token = default);
-
-
-    /// <summary>
-    /// Clears the ledstrip of the current color that its displaying.
-    /// </summary>
-    /// <param name="token"> A token to cancel the current operation. </param>
-    Task ClearAsync(CancellationToken token = default);
+	/// <summary>
+	/// Clears the ledstrip of the current color that its displaying.
+	/// </summary>
+	/// <param name="token"> A token to cancel the current operation. </param>
+	Task ClearAsync(CancellationToken token = default);
 }

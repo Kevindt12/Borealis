@@ -5,11 +5,8 @@ using Borealis.Portal.Domain.Connectivity.Connections;
 using Borealis.Portal.Domain.Connectivity.Models;
 using Borealis.Portal.Domain.Devices.Models;
 using Borealis.Portal.Domain.Exceptions;
-using Borealis.Portal.Infrastructure.Communication;
 using Borealis.Portal.Infrastructure.Connectivity.Factories;
-using Borealis.Portal.Infrastructure.Connectivity.Handlers;
 using Borealis.Portal.Infrastructure.Connectivity.Options;
-using Borealis.Portal.Infrastructure.Connectivity.Serialization;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -23,7 +20,7 @@ internal class DeviceConnection : IDeviceConnection
 {
 	private readonly ILogger<DeviceConnection> _logger;
 
-	private readonly MessageSerializer _messageSerializer;
+
 	private readonly LedstripConnectionFactory _ledstripConnectionFactory;
 	private readonly CommunicationHandlerFactory _communicationHandlerFactory;
 
